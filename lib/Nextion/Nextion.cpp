@@ -13,4 +13,15 @@ void Nextion::sendCommand(const char* cmd)
 };
 void Nextion::init(){
   _serial.begin(9600);
-}
+};
+String Nextion::readInput(){
+  String str;
+  if(_serial.available()>0){                                                              
+    while(_serial.available())
+    {
+      str+=char(_serial.read());
+      delay(10);
+    }
+  }
+  return str; 
+};

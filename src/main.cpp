@@ -6,23 +6,17 @@
 #include <Roaster.h>
 #include <Dispatcher.h>
 
-#define STATESREAD_PERIOD 3000
+#define STATESREFRESH_PERIOD 3000
 #define CONTROLREAD_PERIOD 1000
-Timer timerRosterStates(STATESREAD_PERIOD);
-//Timer timerСontrolEvents(CONTROLREAD_PERIOD);
 
+Timer timerStatesRefresh(STATESREFRESH_PERIOD);
+Timer timerEvents(CONTROLREAD_PERIOD);
 
-Roaster roaster;
 Dispatcher dispatcher;
 
-
-
-
-
 void setup() {
-
   
-  dispatcher.init(&roaster);
+  dispatcher.init();
   
   // открываем последовательный порт для отладки
   Serial.begin(9600);
@@ -31,17 +25,12 @@ void setup() {
 
 void loop() {
 
-    // if (timerСontrolEvents.isReady()) {           // Handling control events... 
+    if (timerEvents.isReady()) {           // Handling control events... 
+      dispatcher.listEvents();
+    }
 
-
-    // }
-
-    if (timerRosterStates.isReady()) {           // Read roster states... 
-
-      dispatcher.updateStates();
-
-
-      // Serial.println(TZ1);
+    if (timerStatesRefresh.isReady()) {             // Refresh all states... 
+      dispatcher.refreshStates();
     }
     
   //delay(300);

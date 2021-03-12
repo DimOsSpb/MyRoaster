@@ -2,16 +2,19 @@
 #include <Nextion.h>
 #include <Roaster.h>
 
+
+
+
 class Dispatcher{
     
     public:
         Dispatcher();
-        void init(Roaster *roaster);
-        bool updateStates();
-        //void showStates();
+        void init();
+        void refreshStates();
+        void listEvents();
     private:
         Nextion _nextion;
-        Roaster *_roaster;
+        Roaster _roaster;
         char _buf[100];
      
 };
