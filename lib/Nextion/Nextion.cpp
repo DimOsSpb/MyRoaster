@@ -20,7 +20,7 @@ String Nextion::readInput(){
     while(_serial.available())
     {
       str+=char(_serial.read());
-      delay(10);
+      delay(20);
     }
   }
   return str; 
