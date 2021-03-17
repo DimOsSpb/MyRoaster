@@ -2,10 +2,14 @@
 
 
 
-
 Timer::Timer(uint32_t periodMS){
     _periodMs = periodMS;
 };
+
+void Timer::start(uint32_t periodMS){
+    _periodMs = periodMS;
+};
+
 bool Timer::isReady(){
     if (millis() - _timer >= _periodMs) {
       do {

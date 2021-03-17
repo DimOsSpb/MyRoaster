@@ -6,7 +6,7 @@
 #include <Roaster.h>
 #include <Dispatcher.h>
 
-#define STATESREFRESH_PERIOD 3000
+#define STATESREFRESH_PERIOD 1000
 #define CONTROLREAD_PERIOD 1000
 
 Timer timerStatesRefresh(STATESREFRESH_PERIOD);
@@ -20,7 +20,7 @@ void setup() {
   
   // открываем последовательный порт для отладки
   Serial.begin(9600);
-
+  //Serial.println("In setup");
 }
 
 void loop() {

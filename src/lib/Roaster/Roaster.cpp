@@ -4,12 +4,27 @@ Roaster::Roaster(): _thermo_z_cb(THERMO_Z_CB_CLK, THERMO_Z_CB_CS, THERMO_Z_CB_DO
 void Roaster::init(){
     _curSates.State = ROASTER_STATE_STOPPED;    
 };
-bool Roaster::start(){
+void Roaster::initRoRTimer(){
+    _timerRoR = millis()+_profile.RoRFreq*1000;
+    _curSates.RoRFlag = true;  
+};
+
+bool Roaster::start(RoastProfile profile){
+    _profile = profile;    
     _timerStart = millis();
-    _curSates.State = ROASTER_STATE_STARTED;
+    _timerStop = 0;
+    _timerRoR = 0;
+    //initRoRTimer();
+    _curSates.FC = 0;
+    _curSates.StopTime = 0;
+    _curSates.StopFlag = false;
+    _curSates.RoRFlag = false;
+    _curSates.State = ROASTER_STATE_STARTED;    
+
     return true;    
 };
 bool Roaster::stop(){
+    //readStates();
     _curSates.State = ROASTER_STATE_STOPPED;
     return true;    
 };
@@ -18,11 +33,45 @@ uint8_t Roaster::getCoffeBeanTemperature(){
 };
 RoasterStates *Roaster::readStates(){
     
-    if(_curSates.State == ROASTER_STATE_STARTED) _curSates.Time = millis() - _timerStart;
-    _curSates.LastTP = _curSates.TP;
-    _curSates.TP = getCoffeBeanTemperature();
-    _curSates.RoR = _curSates.TP + (_curSates.LastTP - _curSates.TP);
+    if(_curSates.State == ROASTER_STATE_STARTED) {
+        _curSates.Time = millis() - _timerStart;
+        if(_timerStop > 0) 
+        {
+            if(millis() < _timerStop)      
+                _curSates.LeftTime = _timerStop - millis();
+            else{
+                _timerStop = 0;
+                _curSates.LeftTime = 0;
+                _curSates.StopFlag = true;
+            } 
+        }   // Stop roast 
+    }
+    _curSates.BT = getCoffeBeanTemperature();
+    if(millis() >= _timerRoR){
+        if(_curSates.LastRoRBT!=0)
+            _curSates.RoR = (_curSates.LastRoRBT >= _curSates.BT ? _curSates.LastRoRBT - _curSates.BT :  _curSates.BT - _curSates.LastRoRBT)/_profile.RoRFreq;
+        _curSates.LastRoRBT = _curSates.BT;
+        initRoRTimer();
+    }
+    
+    
+
     
     return &_curSates;
+};
+void Roaster::FC(uint8_t DevelopmentTimeRatio){
+    uint32_t _curMillis;
+    if(_curSates.State == ROASTER_STATE_STARTED) {
+        _curMillis = millis();
+        _curSates.FC =  _curMillis - _timerStart;
+        _timerStop = _curMillis + (_curSates.FC / (100-DevelopmentTimeRatio)) * DevelopmentTimeRatio;
+        _curSates.StopTime = _timerStop - _timerStart;
+        _curSates.StopFlag = false;
+        
+        
+    }
+};
+void Roaster::DR(uint8_t valDR){
+    _curSates.DR = valDR;
 };
 

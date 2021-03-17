@@ -1,5 +1,7 @@
 #pragma once
+
 #include <Arduino.h>
+
 #define ONE_SEC 1000;
 #define ONE_MIN 60000;
 
@@ -11,7 +13,8 @@ struct DHMS
     uint8_t Secs; 
 };
 
-static DHMS getDHMS(uint32_t Msecs){
+
+static inline DHMS getDHMS(uint32_t Msecs){
     uint32_t secs = Msecs/1000ul;
     DHMS time;
     time.Days = (secs / 3600ul) / 24;
@@ -23,7 +26,9 @@ static DHMS getDHMS(uint32_t Msecs){
 
 class Timer{
     public:
+        Timer();
         Timer(uint32_t periodMs);   //periodMs - Counter in Ms
+        void start(uint32_t periodMs);
         bool isReady();
     private:
         uint32_t _periodMs = ONE_SEC;
