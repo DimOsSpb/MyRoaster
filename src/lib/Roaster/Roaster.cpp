@@ -16,6 +16,7 @@ bool Roaster::start(RoastProfile profile){
     _timerRoR = 0;
     //initRoRTimer();
     _curSates.FC = 0;
+    _curSates.LeftTime = 0;
     _curSates.StopTime = 0;
     _curSates.StopFlag = false;
     _curSates.RoRFlag = false;
@@ -32,13 +33,13 @@ uint8_t Roaster::getCoffeBeanTemperature(){
     return uint8_t(_thermo_z_cb.readCelsius());
 };
 RoasterStates *Roaster::readStates(){
-    
+    uint32_t _curMillis =  millis();
     if(_curSates.State == ROASTER_STATE_STARTED) {
-        _curSates.Time = millis() - _timerStart;
+        _curSates.Time = _curMillis - _timerStart;
         if(_timerStop > 0) 
         {
-            if(millis() < _timerStop)      
-                _curSates.LeftTime = _timerStop - millis();
+            if(_curMillis < _timerStop)      
+                _curSates.LeftTime = _timerStop - _curMillis;
             else{
                 _timerStop = 0;
                 _curSates.LeftTime = 0;
@@ -47,9 +48,10 @@ RoasterStates *Roaster::readStates(){
         }   // Stop roast 
     }
     _curSates.BT = getCoffeBeanTemperature();
-    if(millis() >= _timerRoR){
+    _curMillis =  millis();
+    if(_curMillis >= _timerRoR){
         if(_curSates.LastRoRBT!=0)
-            _curSates.RoR = (_curSates.LastRoRBT >= _curSates.BT ? _curSates.LastRoRBT - _curSates.BT :  _curSates.BT - _curSates.LastRoRBT)/_profile.RoRFreq;
+            _curSates.RoR = _curSates.LastRoRBT >= _curSates.BT ? _curSates.LastRoRBT - _curSates.BT :  _curSates.BT - _curSates.LastRoRBT;
         _curSates.LastRoRBT = _curSates.BT;
         initRoRTimer();
     }
@@ -67,11 +69,11 @@ void Roaster::FC(uint8_t DevelopmentTimeRatio){
         _timerStop = _curMillis + (_curSates.FC / (100-DevelopmentTimeRatio)) * DevelopmentTimeRatio;
         _curSates.StopTime = _timerStop - _timerStart;
         _curSates.StopFlag = false;
-        
+        Serial.print("TStart:"); Serial.print(_timerStart); Serial.print(" TFC:");  Serial.print(_curMillis);  Serial.print(" TStop");  Serial.print(_timerStop);
         
     }
 };
-void Roaster::DR(uint8_t valDR){
-    _curSates.DR = valDR;
+void Roaster::RL(uint8_t valRL){
+    _curSates.RL = valRL;
 };
 

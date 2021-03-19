@@ -16,6 +16,7 @@ struct RoastProfile
 {
     uint8_t RoRFreq;        //Frequency of RoR calculation in sec
     uint8_t DTR;             //Development Ratio – a time ratio: % of the time of first crack in relation to the overall time
+    uint8_t RL;             //Roast LEVEL
 };
 struct RoasterStates
 {
@@ -30,7 +31,7 @@ struct RoasterStates
     uint8_t RoR;           //Delta of curent cofeeBeansTemp & last sec cofee bean temperature. (Rate of rise, or ROR, is linked to bean temperature (or BT; discussed below), and is the rate or speed at which this little green seed is transforming into a darker hew.)
     uint32_t FC;            //First crack in Ms from start of roast
     uint8_t BT;             //BT stands for bean temperature and it will change drastically due to changes occurring within the bean both chemically and physically since the crack means the bean can release moisture and, in so doing, change the temperature within the drum. This, for many reasons, is incredibly important and noted in the graph.
-    uint8_t DR;             //Development Ratio – a time ratio: % of the time of first crack in relation to the overall time
+    uint8_t RL;             //Roast LEVEL
 };
 
 
@@ -43,7 +44,7 @@ class Roaster{
         bool start(RoastProfile profile);
         bool stop();
         void FC(uint8_t DevelopmentTimeRatio);
-        void DR(uint8_t valDR);
+        void RL(uint8_t valRL);
         RoasterStates *readStates();
     private:
         MAX6675 _thermo_z_cb;               //Coffe bean thermo zond
