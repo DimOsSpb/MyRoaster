@@ -72,7 +72,7 @@ void Dispatcher::stopSecondCrack(){
 }
 
 void Dispatcher::changeRoastLevel(uint8_t level, bool _reflect = true){
-    if(level > 0 && level < 9){
+    if(level > 0 && level < 11){
         _profile.RL = level;
         _roaster.RL(level);
         if(_reflect) _reflectChanges_RL();
@@ -82,9 +82,9 @@ void Dispatcher::changeRoastLevel(uint8_t level, bool _reflect = true){
 void Dispatcher::_reflectChanges_RL(){
     uint8_t _pr_i = _profile.RL-1;
 
-    sprintf(_buf, "page0.t_rl.txt=\"RL%u: %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
+    sprintf(_buf, "page0.t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
     _nextion.sendCommand(_buf); 
-    sprintf(_buf, "page0.t_max.txt=\"/Max:%u\"",RL_TEMPS[_pr_i]);
+    sprintf(_buf, "page0.t_max.txt=\"T<%u\"",RL_TEMPS[_pr_i]);
     _nextion.sendCommand(_buf);
 }
 
@@ -95,7 +95,7 @@ void Dispatcher::refreshStates(){
     DHMS timeFC = getDHMS(_curRoasterStates->FC);
     DHMS leftTime;
     String _btn_down_text;
-    uint16_t x,_tmp_Xval,_tmp_BTval,_tmp_RoRval;
+    uint16_t x,_tmp_Xval,_tmp_BTval,_tmp_RoRval,_t1,_t2;
 
     if(_chartIndex>=CHART_DX){
         stopRoast();  
@@ -105,9 +105,10 @@ void Dispatcher::refreshStates(){
 
         //Chart
         if(_curRoasterStates->Time - _lastChartTim >= GRAPH_FREQUENCY){
-
-            _tmp_BTval = CHART_DY-_curRoasterStates->BT*CHART_DY/CHART_BT_MAX;
-            _tmp_RoRval = CHART_DY-_curRoasterStates->RoR*CHART_DY/CHART_RoR_MAX;
+            _t1=_curRoasterStates->BT*CHART_DY/CHART_BT_MAX;
+            _t2=_curRoasterStates->RoR*CHART_DY/CHART_RoR_MAX;
+            _tmp_BTval = CHART_DY>=_t1?CHART_DY-_t1:CHART_DY;
+            _tmp_RoRval = CHART_DY>=_t2?CHART_DY-_t2:CHART_DY;
 
             if(_chartIndex)  _tmp_Xval =  _chartIndex - 1;
             else
@@ -121,22 +122,22 @@ void Dispatcher::refreshStates(){
             // _nextion.sendCommand(_buf);            
             sprintf(_buf, "line %u,%u,%u,%u,GREEN",_tmp_Xval,_chartLastBT,_chartIndex,_tmp_BTval);
             _nextion.sendCommand(_buf);
-            sprintf(_buf, "line %u,%u,%u,%u,GREEN",_tmp_Xval,_chartLastBT+1,_chartIndex,_tmp_BTval+1);
-            _nextion.sendCommand(_buf);
+            //sprintf(_buf, "line %u,%u,%u,%u,GREEN",_tmp_Xval,_chartLastBT+1,_chartIndex,_tmp_BTval+1);
+            //_nextion.sendCommand(_buf);
             _chartLastBT = _tmp_BTval;
 
-            if(_curRoasterStates->RoRFlag){
+           // if(_curRoasterStates->RoRFlag){
                 // sprintf(_buf, "add 15,1,%u",_tmp_RoRval);
                 // _nextion.sendCommand(_buf);            
                 sprintf(_buf, "line %u,%u,%u,%u,WHITE",_tmp_Xval,_chartLastRoR,_chartIndex,_tmp_RoRval);
                 _nextion.sendCommand(_buf);
-                sprintf(_buf, "line %u,%u,%u,%u,WHITE",_tmp_Xval,_chartLastRoR+1,_chartIndex,_tmp_RoRval+1);
-                _nextion.sendCommand(_buf);
+                //sprintf(_buf, "line %u,%u,%u,%u,WHITE",_tmp_Xval,_chartLastRoR+1,_chartIndex,_tmp_RoRval+1);
+                //_nextion.sendCommand(_buf);
 
                 _chartLastRoR = _tmp_RoRval;
                 
-                _curRoasterStates->RoRFlag = false;
-            }
+                //_curRoasterStates->RoRFlag = false;
+           // }
 
             _lastChartTim = _curRoasterStates->Time;
             _chartIndex++;

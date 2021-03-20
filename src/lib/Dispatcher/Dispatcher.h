@@ -25,7 +25,7 @@
 #define BTN_SC_ON_DOWN_TEXT "\r\n SCE" 
 #define BTN_SC_OFF_DOWN_TEXT "\r\n SC"
 
-#define DEFAULT_ROR_FREQ 3     //in secs
+#define DEFAULT_ROR_FREQ 15     //in secs
 #define DEFAULT_DTR 22                  //Development Time Ratio (DTR) 15-25% (20-25% rec. https://www.scottrao.com/blog/2016/8/25/development-time-ratio )
 
 struct RoastLevels
