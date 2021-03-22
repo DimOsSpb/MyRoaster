@@ -15,7 +15,7 @@ Timer timerEvents(CONTROL_READ_PERIOD);
 Dispatcher dispatcher;
 
 void setup() {
-  
+  Serial1.println("Hello");
   dispatcher.init();
   
   // открываем последовательный порт для отладки
@@ -24,6 +24,7 @@ void setup() {
 }
 
 void loop() {
+
 
     if (timerEvents.isReady()) {           // Handling control events... 
       dispatcher.listEvents();

@@ -3,6 +3,7 @@
 #include <Dispatcher.h>
 #include <Roaster.h>
 #include <Time.h>
+#include <Chart.h>
 
 // RX - digital output 9, connect on Nextian TX 
 // TX - digital output 10, connect on Nextian RX
@@ -24,9 +25,7 @@ const RoastLevels _RL[10]={
     {3,"Italian"}
 };
 
-Dispatcher::Dispatcher(): _nextion(NEXTIAN_RX, NEXTIAN_TX){
-
-};
+Dispatcher::Dispatcher(): _nextion(NEXTIAN_RX, NEXTIAN_TX), _chart(&_nextion,0,0,CHART_DX,CHART_DY){};
 
 void Dispatcher::init(){
     _profile.RoRFreq = DEFAULT_ROR_FREQ;
@@ -35,6 +34,9 @@ void Dispatcher::init(){
 
     _nextion.sendCommand("rest");
     _roaster.init();
+
+    _chart.initChanel(0,0,CHART_BT_MAX,CHART_BT_COLOR);
+    _chart.initChanel(1,0,CHART_ROR_MAX,CHART_ROR_COLOR);
 
     _refreshStatesCounter = 0;    
     _chartIndex = 0;
@@ -106,7 +108,7 @@ void Dispatcher::refreshStates(){
         //Chart
         if(_curRoasterStates->Time - _lastChartTim >= GRAPH_FREQUENCY){
             _t1=_curRoasterStates->BT*CHART_DY/CHART_BT_MAX;
-            _t2=_curRoasterStates->RoR*CHART_DY/CHART_RoR_MAX;
+            _t2=_curRoasterStates->RoR*CHART_DY/CHART_ROR_MAX;
             _tmp_BTval = CHART_DY>=_t1?CHART_DY-_t1:CHART_DY;
             _tmp_RoRval = CHART_DY>=_t2?CHART_DY-_t2:CHART_DY;
 
@@ -117,11 +119,11 @@ void Dispatcher::refreshStates(){
                 _chartLastRoR = _tmp_RoRval;
 
             }
-            
-            // sprintf(_buf, "add 15,0,%u",_tmp_BTval);
-            // _nextion.sendCommand(_buf);            
-            sprintf(_buf, "line %u,%u,%u,%u,GREEN",_tmp_Xval,_chartLastBT,_chartIndex,_tmp_BTval);
-            _nextion.sendCommand(_buf);
+                        // sprintf(_buf, "add 15,0,%u",_tmp_BTval);
+            // _nextion.sendCommand(_buf);
+            _chart.addChanelValue(0,_curRoasterStates->BT);            
+            // sprintf(_buf, "line %u,%u,%u,%u,GREEN",_tmp_Xval,_chartLastBT,_chartIndex,_tmp_BTval);
+            // _nextion.sendCommand(_buf);
             //sprintf(_buf, "line %u,%u,%u,%u,GREEN",_tmp_Xval,_chartLastBT+1,_chartIndex,_tmp_BTval+1);
             //_nextion.sendCommand(_buf);
             _chartLastBT = _tmp_BTval;

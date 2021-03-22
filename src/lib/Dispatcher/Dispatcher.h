@@ -1,6 +1,8 @@
 #pragma once
 #include <Nextion.h>
 #include <Roaster.h>
+#include <Chart.h>
+
 #define NEXTIAN_RX 9
 #define NEXTIAN_TX 10
 #define GRAPH_FREQUENCY 2500    //in MS - 2,5secs
@@ -8,7 +10,10 @@
 #define CHART_DY 120 
 
 #define CHART_BT_MAX 260
-#define CHART_RoR_MAX 25
+#define CHART_ROR_MAX 25
+
+#define CHART_ROR_COLOR 65535u
+#define CHART_BT_COLOR 13663u
 
 
 #define BTN_ST_ON_COMMAND "Start"
@@ -52,13 +57,14 @@ class Dispatcher{
     private:
         Nextion _nextion;
         Roaster _roaster;
-        char _buf[100];
+        Chart _chart;
+
         uint16_t _chartIndex,_chartFCIndex;
         uint16_t _chartLastBT,_chartLastRoR;
         uint32_t _lastChartTim;
         uint32_t _refreshStatesCounter;
         RoastProfile _profile;
-
+        char _buf[100];
         void _reflectChanges_RL();
 
      

@@ -38,3 +38,10 @@ String Nextion::readInput(){
   }
   return str; 
 };
+void Nextion::line(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby,uint16_t color){
+  sprintf(_buf, "line %u,%u,%u,%u,%u",ltx,lty,rbx,rby,color);
+    Serial.println(_buf);
+
+  sendCommand(_buf);
+};
+
