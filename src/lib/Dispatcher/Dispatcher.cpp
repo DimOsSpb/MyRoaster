@@ -10,9 +10,9 @@
 // Nextian display pins config
 
 
-const uint8_t RL_TEMPS[10]={196,205,210,219,224,225,234,239,243,246};
-const String RL_GROUPE[4]={"Light","Medium","Medium-dark","Dark"};
-const RoastLevels _RL[10]={
+const uint8_t RL_TEMPS[10] PROGMEM={196,205,210,219,224,225,234,239,243,246};
+const String RL_GROUPE[4] ={"Light","Medium","Medium-dark","Dark"};
+const RoastLevels _RL[10] ={
     {0,"Cinnamon"},
     {0,"New England"},
     {1,"American"},
