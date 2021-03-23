@@ -10,7 +10,7 @@
 // Nextian display pins config
 
 
-const uint8_t RL_TEMPS[10] PROGMEM={196,205,210,219,224,225,234,239,243,246};
+const uint8_t RL_TEMPS[10] ={196,205,210,219,224,225,234,239,243,246};
 const String RL_GROUPE[4] ={"Light","Medium","Medium-dark","Dark"};
 const RoastLevels _RL[10] ={
     {0,"Cinnamon"},
@@ -86,7 +86,7 @@ void Dispatcher::_reflectChanges_RL(){
 
     sprintf(_buf, "page0.t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
     _nextion.sendCommand(_buf); 
-    sprintf(_buf, "page0.t_max.txt=\"T<%u\"",RL_TEMPS[_pr_i]);
+    sprintf(_buf, "page0.t_max.txt=\"%u\"",RL_TEMPS[_pr_i]);
     _nextion.sendCommand(_buf);
 }
 
@@ -97,49 +97,19 @@ void Dispatcher::refreshStates(){
     DHMS timeFC = getDHMS(_curRoasterStates->FC);
     DHMS leftTime;
     String _btn_down_text;
-    uint16_t x,_tmp_Xval,_tmp_BTval,_tmp_RoRval,_t1,_t2;
-
-    if(_chartIndex>=CHART_DX){
-        stopRoast();  
-    }
+    uint16_t x;
 
     if(_curRoasterStates->State == ROASTER_STATE_STARTED){
 
         //Chart
+        if(_chart.fieldIsOver()){
+            stopRoast();  
+        }
         if(_curRoasterStates->Time - _lastChartTim >= GRAPH_FREQUENCY){
-            _t1=_curRoasterStates->BT*CHART_DY/CHART_BT_MAX;
-            _t2=_curRoasterStates->RoR*CHART_DY/CHART_ROR_MAX;
-            _tmp_BTval = CHART_DY>=_t1?CHART_DY-_t1:CHART_DY;
-            _tmp_RoRval = CHART_DY>=_t2?CHART_DY-_t2:CHART_DY;
 
-            if(_chartIndex)  _tmp_Xval =  _chartIndex - 1;
-            else
-            {
-                _chartLastBT = _tmp_BTval;
-                _chartLastRoR = _tmp_RoRval;
-
-            }
-                        // sprintf(_buf, "add 15,0,%u",_tmp_BTval);
-            // _nextion.sendCommand(_buf);
             _chart.addChanelValue(0,_curRoasterStates->BT);            
-            // sprintf(_buf, "line %u,%u,%u,%u,GREEN",_tmp_Xval,_chartLastBT,_chartIndex,_tmp_BTval);
-            // _nextion.sendCommand(_buf);
-            //sprintf(_buf, "line %u,%u,%u,%u,GREEN",_tmp_Xval,_chartLastBT+1,_chartIndex,_tmp_BTval+1);
-            //_nextion.sendCommand(_buf);
-            _chartLastBT = _tmp_BTval;
-
-           // if(_curRoasterStates->RoRFlag){
-                // sprintf(_buf, "add 15,1,%u",_tmp_RoRval);
-                // _nextion.sendCommand(_buf);            
-                sprintf(_buf, "line %u,%u,%u,%u,WHITE",_tmp_Xval,_chartLastRoR,_chartIndex,_tmp_RoRval);
-                _nextion.sendCommand(_buf);
-                //sprintf(_buf, "line %u,%u,%u,%u,WHITE",_tmp_Xval,_chartLastRoR+1,_chartIndex,_tmp_RoRval+1);
-                //_nextion.sendCommand(_buf);
-
-                _chartLastRoR = _tmp_RoRval;
-                
-                //_curRoasterStates->RoRFlag = false;
-           // }
+            _chart.addChanelValue(1,_curRoasterStates->RoR);
+            _chart.chanelForecast(0);            
 
             _lastChartTim = _curRoasterStates->Time;
             _chartIndex++;
@@ -156,7 +126,7 @@ void Dispatcher::refreshStates(){
                 sprintf(_buf, "page0.b_st.bco2=%s",_refreshStatesCounter & 1 ? "RED" : "19188");
                 _nextion.sendCommand(_buf);                
             }
-            sprintf(_buf, "page0.t_left.txt=\"E %02u:%02u\"",leftTime.Mins,leftTime.Secs);
+            sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",leftTime.Mins,leftTime.Secs);
             _nextion.sendCommand(_buf);
 
             x = _curRoasterStates->StopTime / (_curRoasterStates->FC / _chartFCIndex);
@@ -167,17 +137,16 @@ void Dispatcher::refreshStates(){
             _nextion.sendCommand(_buf); 
         }
         else 
-            sprintf(_buf, "page0.t_left.txt=\"E %02u:%02u\"",0,0);
+            sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",0,0);
 
         _btn_down_text = BTN_ST_OFF_DOWN_TEXT;
     }
     else
         _btn_down_text = BTN_ST_ON_DOWN_TEXT;
 
-    sprintf(_buf, "page0.t_ror.txt=\"RoR:%u\"",_curRoasterStates->RoR);
+    sprintf(_buf, "page0.t_ror.txt=\"%u\"",_curRoasterStates->RoR);
     _nextion.sendCommand(_buf); 
-
-    sprintf(_buf, "page0.t_bt.txt=\"BT:%u\"",_curRoasterStates->BT);
+    sprintf(_buf, "page0.t_bt.txt=\"%u\"",_curRoasterStates->BT);
     _nextion.sendCommand(_buf); 
  
     sprintf(_buf, "page0.b_st.txt=\"%02u:%02u%s\"",time.Mins,time.Secs, _btn_down_text.c_str());

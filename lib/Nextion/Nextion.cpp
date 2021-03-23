@@ -40,8 +40,12 @@ String Nextion::readInput(){
 };
 void Nextion::line(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby,uint16_t color){
   sprintf(_buf, "line %u,%u,%u,%u,%u",ltx,lty,rbx,rby,color);
-    Serial.println(_buf);
-
+//  Serial.println(_buf);
   sendCommand(_buf);
+};
+void Nextion::cropPic(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby){
+  sprintf(_buf, "picq %u,%u,%u,%u,%u",ltx,lty,rbx-ltx+1,rby-lty,0);
+  sendCommand(_buf);
+//  Serial.println(_buf);
 };
 
