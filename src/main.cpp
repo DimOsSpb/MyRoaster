@@ -6,8 +6,8 @@
 #include <Roaster.h>
 #include <Dispatcher.h>
 
-#define STATES_REFRESH_PERIOD 1000
-#define CONTROL_READ_PERIOD 500
+#define STATES_REFRESH_PERIOD 500
+#define CONTROL_READ_PERIOD 100
 
 Timer timerStatesRefresh(STATES_REFRESH_PERIOD);
 Timer timerEvents(CONTROL_READ_PERIOD);
@@ -26,9 +26,9 @@ void setup() {
 void loop() {
 
 
-    if (timerEvents.isReady()) {           // Handling control events... 
+    //if (timerEvents.isReady()) {           // Handling control events... 
       dispatcher.listEvents();
-    }
+    //}
 
     if (timerStatesRefresh.isReady()) {             // Refresh all states... 
       dispatcher.refreshStates();

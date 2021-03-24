@@ -14,6 +14,7 @@
 
 #define CHART_ROR_COLOR 65535u
 #define CHART_BT_COLOR 13663u
+#define CHART_MAX_BT_COLOR 63488u
 
 
 #define BTN_ST_ON_COMMAND "Start"
@@ -23,6 +24,8 @@
 #define BTN_SC_ON_COMMAND "SC"
 #define BTN_SC_OFF_COMMAND "SCE"
 #define BTN_RL_COMMAND "RL"
+#define ON_PAGE_COMMAND "PG"
+
 #define BTN_ST_ON_DOWN_TEXT "\r\n Start" 
 #define BTN_ST_OFF_DOWN_TEXT "\r\n Stop"
 #define BTN_FC_ON_DOWN_TEXT "\r\n FCE" 

@@ -2,9 +2,9 @@
 #include <Nextion.h>
 
 
-#define CHART_CHANELS 2
+#define CHART_CHANELS 3
 #define CHART_FILTER_RATIO 0.5   //0.01-0.1
-#define CHARRT_STAT_VALUES 10
+#define CHARRT_STAT_VALUES 4
 
 struct Point{
     uint16_t x,y;
@@ -23,7 +23,7 @@ struct Channel{
     uint16_t lastValue;         //Not Filtered Last
     uint8_t depth;
     uint16_t color;    
-    uint16_t curPos;
+    uint16_t curX;
     float pointsInDivision; 
 };
 
@@ -33,6 +33,7 @@ class Chart{
         Chart(Nextion *nextion,uint16_t ltx,uint16_t lty, uint16_t rbx,uint16_t rby);
         void initChanel(uint8_t ch_idx,uint16_t minValue,uint16_t maxValue,uint16_t color,uint8_t depth=1);
         void addChanelValue(uint8_t ch_idx,uint16_t value);
+        void line(uint8_t ch_idx,uint16_t value);
         void chanelForecast(uint8_t ch_idx);
         bool fieldIsOver(); 
     private:
@@ -43,7 +44,8 @@ class Chart{
         float _deltaXY;
 
         void keepChartLastValue(uint8_t ch_idx, uint16_t _value, uint16_t _filteredValue);
-        uint16_t getY(uint8_t ch_idx, uint16_t _value);
+        const uint16_t getY(uint8_t ch_idx, uint16_t _value);
+        const uint16_t average(uint16_t *_values); //_values[AVERAGE_COUNT]!!
        
 
      

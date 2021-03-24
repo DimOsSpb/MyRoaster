@@ -35,8 +35,9 @@ void Dispatcher::init(){
     _nextion.sendCommand("rest");
     _roaster.init();
 
-    _chart.initChanel(0,0,CHART_BT_MAX,CHART_BT_COLOR);
-    _chart.initChanel(1,0,CHART_ROR_MAX,CHART_ROR_COLOR);
+    _chart.initChanel(0,0,CHART_BT_MAX,CHART_BT_COLOR,2);
+    _chart.initChanel(1,0,CHART_ROR_MAX,CHART_ROR_COLOR,2);
+    _chart.initChanel(2,0,CHART_BT_MAX,CHART_MAX_BT_COLOR,2);
 
     _refreshStatesCounter = 0;    
     _chartIndex = 0;
@@ -88,6 +89,8 @@ void Dispatcher::_reflectChanges_RL(){
     _nextion.sendCommand(_buf); 
     sprintf(_buf, "page0.t_max.txt=\"%u\"",RL_TEMPS[_pr_i]);
     _nextion.sendCommand(_buf);
+
+   
 }
 
 void Dispatcher::refreshStates(){
@@ -101,21 +104,33 @@ void Dispatcher::refreshStates(){
 
     if(_curRoasterStates->State == ROASTER_STATE_STARTED){
 
-        //Chart
-        if(_chart.fieldIsOver()){
-            stopRoast();  
-        }
-        if(_curRoasterStates->Time - _lastChartTim >= GRAPH_FREQUENCY){
+            //Chart-------------------------------------
+                if(_chart.fieldIsOver()){
+                    stopRoast();  
+                }
+                if( _nextion.currentPage()==0 && _curRoasterStates->Time - _lastChartTim >= GRAPH_FREQUENCY){
 
-            _chart.addChanelValue(0,_curRoasterStates->BT);            
-            _chart.addChanelValue(1,_curRoasterStates->RoR);
-            _chart.chanelForecast(0);            
+                    _chart.addChanelValue(0,_curRoasterStates->BT);            
+                    _chart.addChanelValue(1,_curRoasterStates->RoR);
+                    _chart.chanelForecast(0);
 
-            _lastChartTim = _curRoasterStates->Time;
-            _chartIndex++;
+                        
 
-        }
+                    _lastChartTim = _curRoasterStates->Time;
+                    _chartIndex++;
 
+                    if(_curRoasterStates->FC > 0){
+                        x = _curRoasterStates->StopTime / (_curRoasterStates->FC / _chartFCIndex);
+                        Serial.print(x); 
+                        sprintf(_buf, "line %u,%u,%u,%u,2016",_chartFCIndex,0,_chartFCIndex,CHART_DY);
+                        _nextion.sendCommand(_buf); 
+                        sprintf(_buf, "line %u,%u,%u,%u,RED",x,0,x,CHART_DY);
+                        _nextion.sendCommand(_buf); 
+                    }
+
+                    _chart.line(2,RL_TEMPS[_profile.RL]);
+                }
+            //chart---------------------------------
 
         sprintf(_buf, "page0.b_fc.txt=\"%02u:%02u\r\n  FC\"",timeFC.Mins,timeFC.Secs);
         _nextion.sendCommand(_buf);
@@ -129,12 +144,6 @@ void Dispatcher::refreshStates(){
             sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",leftTime.Mins,leftTime.Secs);
             _nextion.sendCommand(_buf);
 
-            x = _curRoasterStates->StopTime / (_curRoasterStates->FC / _chartFCIndex);
-            Serial.print(x); 
-            sprintf(_buf, "line %u,%u,%u,%u,2016",_chartFCIndex,0,_chartFCIndex,CHART_DY);
-            _nextion.sendCommand(_buf); 
-            sprintf(_buf, "line %u,%u,%u,%u,RED",x,0,x,CHART_DY);
-            _nextion.sendCommand(_buf); 
         }
         else 
             sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",0,0);
@@ -166,12 +175,20 @@ void Dispatcher::refreshStates(){
      
 };
 
+
+
 void Dispatcher::listEvents(){
     String input = _nextion.readInput();
     //Serial.print("input :");
     //Serial.println(input);
     for(unsigned int i=0; i<input.length(); i++){
-        if(memcmp(&input[i],BTN_ST_ON_COMMAND ,sizeof(BTN_ST_ON_COMMAND)-1)==0){
+        if(memcmp(&input[i],ON_PAGE_COMMAND ,sizeof(ON_PAGE_COMMAND)-1)==0){
+            _nextion.onPage(input[i+sizeof(ON_PAGE_COMMAND)-1]);
+            Serial.println(_nextion.currentPage());
+            i+=sizeof(ON_PAGE_COMMAND+2);
+
+        }        
+        else if(memcmp(&input[i],BTN_ST_ON_COMMAND ,sizeof(BTN_ST_ON_COMMAND)-1)==0){
             i+=sizeof(BTN_ST_ON_COMMAND)-2;
             startRoast();
 
@@ -190,7 +207,8 @@ void Dispatcher::listEvents(){
             changeRoastLevel(input[i+sizeof(BTN_RL_COMMAND)-1]);
             i+=sizeof(BTN_RL_COMMAND+2);
 
-        }        
+        }
+                 
     }
 }
 

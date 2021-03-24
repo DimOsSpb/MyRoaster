@@ -31,7 +31,7 @@ void Chart::keepChartLastValue(uint8_t ch_idx, uint16_t _value, uint16_t _filter
     _channels[ch_idx].lastValue = _value;
 };
 
-uint16_t Chart::getY(uint8_t ch_idx,uint16_t _value){
+const uint16_t Chart::getY(uint8_t ch_idx,uint16_t _value){
     uint16_t val_y;
 
     if(_value>_channels[ch_idx].maxValue) val_y = _leftTop.y;
@@ -40,9 +40,18 @@ uint16_t Chart::getY(uint8_t ch_idx,uint16_t _value){
     return val_y;
 };
 
+#define AVERAGE_COUNT 2 //_values[AVERAGE_COUNT]!!
+const uint16_t Chart::average(uint16_t *_values){
+    int32_t _val=int32_t(*_values);
+    for (size_t i = 0; i < AVERAGE_COUNT; i++)
+        _val = _val + (*(_values+1) - _val) * 0.5;    
+    return _val;
+     
+};
+
 bool Chart::fieldIsOver(){
     for (uint8_t i = 0; i < CHART_CHANELS; i++)
-        if(_channels[i].curPos>_rightBottom.x)
+        if(_channels[i].curX>_rightBottom.x)
             return true;
     return false;
     
@@ -52,14 +61,12 @@ bool Chart::fieldIsOver(){
 void Chart::addChanelValue(uint8_t ch_idx,uint16_t _value){
     uint16_t val_x1,val_y1,val_y2;
     int32_t last_val,filtered_val;
-                                    // filtered_val - фильтрованное значение
-                                    // val - новое значение (с датчика)
-                                    // CHART_VALUE_FILTER_RATIO - коэффициент фильтрации 0.. 1. Обычно около 0.01-0.1 (то бишь float)  
 
-    if(ch_idx >= 0  && ch_idx < CHART_CHANELS){
-        if(_channels[ch_idx].curPos) {
+    if(ch_idx >= 0  && ch_idx < CHART_CHANELS && _channels[ch_idx].depth>0){
+        if(_channels[ch_idx].curX) {
             last_val = _channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1];
-            if(_channels[ch_idx].lastValue != _value ) filtered_val = last_val + (_value - last_val) * CHART_FILTER_RATIO;
+            if(_channels[ch_idx].lastValue != _value ) 
+                filtered_val = last_val + (_value - last_val) * CHART_FILTER_RATIO; // CHART_VALUE_FILTER_RATIO - коэффициент фильтрации 0.. 1. Обычно около 0.01-0.1 (то бишь float)
             else filtered_val = _value;
         }
         else{
@@ -67,80 +74,97 @@ void Chart::addChanelValue(uint8_t ch_idx,uint16_t _value){
             filtered_val = _value;
         }
 
-        //   Serial.println(last_val);
-        //   Serial.println(filtered_val);
 
         val_y2 = getY(ch_idx, filtered_val);
-        if(_channels[ch_idx].curPos){
-            val_x1 = _channels[ch_idx].curPos - 1;
+        if(_channels[ch_idx].curX){
+            val_x1 = _channels[ch_idx].curX - 1;
             val_y1 = getY(ch_idx, last_val);
         }
         else { 
-            val_x1 = _channels[ch_idx].curPos;
+            val_x1 = _channels[ch_idx].curX;
             val_y1 = val_y2;
         }
-        
-    // Serial.print("pointsInDivision:"); Serial.println(_channels[ch_idx].pointsInDivision);
-    // Serial.print("x1:"); Serial.print(val_x1);
-    // Serial.print(" y1:"); Serial.print(val_y1);
-    // Serial.print(" x2:"); Serial.print(_channels[ch_idx].curPos);
-    // Serial.print(" y2:"); Serial.println(val_y2);
-    
-        _nextion->line( val_x1,
-                        val_y1,
-                        _channels[ch_idx].curPos,
-                        val_y2,
-                        _channels[ch_idx].color);
-        _channels[ch_idx].curPos++;
+
+        for (uint8_t i = 0; i < _channels[ch_idx].depth; i++)
+        {
+            uint8_t y1 = val_y1 > _leftTop.y ? val_y1-i : val_y1,
+                    y2 = val_y2 > _leftTop.y ? val_y2-i : val_y2;
+            _nextion->line( val_x1, y1, _channels[ch_idx].curX, y2, _channels[ch_idx].color );
+                
+        }
+
+
+        _channels[ch_idx].curX++;
         keepChartLastValue(ch_idx, _value, filtered_val);
     }
 };
 
+#define DELTA_P 2 //difference curX between average lastValues[0,1,2] and average lastValues[3,4,5]
 void Chart::chanelForecast(uint8_t ch_idx){
-    float   changeRatio,        //Value Ghange ratio 
-            leftTimeRatio;      //Сhange time / Left time Ratio
+    uint16_t firstValue,secondValue,overVal=0;
+    float forecastVal;
+    float ratio;            //Value Ghange ratio
+    float leftPosRatio;     //Left Pos / DELTA_P Ratio
+        
 
-    uint16_t x1,x2,y1,y2,forecastVal,overVal;
+    uint16_t x1,x2,y1,y2;
 
-    if(_channels[ch_idx].curPos>CHARRT_STAT_VALUES-1) {      //we have stat
+    if(_channels[ch_idx].depth > 0 && _channels[ch_idx].curX > CHARRT_STAT_VALUES-1 && _channels[ch_idx].curX<_rightBottom.x-1) {     //if statistics accumulated
 
-        x1 = _channels[ch_idx].curPos-1;                    //all times x1,xy here
-        y1 = getY(ch_idx,_channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1]);
 
-        // if(_channels[ch_idx].lastValues[1]!=0) 
-        //     k = float(_channels[ch_idx].lastValues[2])/_channels[ch_idx].lastValues[1];  
+        firstValue = average(&_channels[ch_idx].lastValues[0]); //average lastValues[0,1]
+        secondValue = average(&_channels[ch_idx].lastValues[2]); //average lastValues[2,3]
 
-        if(_channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1]==_channels[ch_idx].lastValues[0])
-            forecastVal = _channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1];
-        else
+        x1 = _channels[ch_idx].curX;    //all times x1,xy here
+        y1 = getY(ch_idx,secondValue);
+
+        _nextion->cropPic(x1, _leftTop.y, _rightBottom.x, _rightBottom.y);
+        x1++;
+
+        if(firstValue==secondValue)     // No changes 
+            forecastVal = secondValue;
+        else                            // Forecast
         {    
-            changeRatio = float(_channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1])/_channels[ch_idx].lastValues[0];
-            leftTimeRatio = 10; //(_rightBottom.x - _channels[ch_idx].curPos)/20;                           //2 pos (time)
-            forecastVal = _channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1]*changeRatio;
-     Serial.print("forecastVal="); Serial.print(_channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1]); Serial.print(" * "); Serial.print( changeRatio); Serial.print(" * "); Serial.println(leftTimeRatio);
+            ////////////////////////////////// FORECAST /////////////////////////////////////////////
+
+            ratio = float(secondValue) - firstValue;
+            leftPosRatio = (_rightBottom.x - _channels[ch_idx].curX) / DELTA_P;
+            forecastVal = secondValue + (ratio*leftPosRatio);
+            if(forecastVal>_channels[ch_idx].maxValue) 
+            {
+
+                overVal = abs(fabs(forecastVal) - abs(_channels[ch_idx].maxValue))*_channels[ch_idx].pointsInDivision/_deltaXY;
+                forecastVal = _channels[ch_idx].maxValue;
+
+            }
+            if(forecastVal<_channels[ch_idx].minValue) 
+            {
+                overVal = abs(abs(_channels[ch_idx].minValue) - fabs(forecastVal))*_channels[ch_idx].pointsInDivision/_deltaXY;
+                forecastVal=_channels[ch_idx].minValue;
+            }
+            /////////////////////////////////////////////////////////////////////////////////////////
         }
-
-        y2 = getY(ch_idx, forecastVal);        
-        x2 = _rightBottom.x;
-
-        _nextion->cropPic(x1, _leftTop.y, x2, _rightBottom.y);
-
-        if(forecastVal>_channels[ch_idx].maxValue){
-        
-            overVal = (forecastVal - _channels[ch_idx].maxValue)*_channels[ch_idx].pointsInDivision/_deltaXY;
-        Serial.print("overVal="); Serial.println(overVal);
-        Serial.print("x2-x1="); Serial.println(x2-x1);
-            if(overVal<(x2-x1)) x2 -= overVal; 
+        Serial.println(overVal);
+        if(overVal > 0)
+        {
+            if(overVal<(_rightBottom.x-x1)) x2 = _rightBottom.x-overVal;
+            else x2 = x1;
         }
+        else x2 = _rightBottom.x;
+
+        y2 = getY(ch_idx, uint16_t(forecastVal));        
         
 
-
-    // Serial.print("last-y:"); Serial.print(_channels[ch_idx].lastValues[2]);
-    // Serial.print(" forecastVal:"); Serial.println(forecastVal);
-     
-    _nextion->line(x1, y1, x2, y2, 33840);
+        _nextion->line(x1, y1, x2, y2, 29614);
     }
 };
 
+void Chart::line(uint8_t ch_idx,uint16_t value){
+    uint16_t y;
+    if(_channels[ch_idx].depth>0){ 
+        y = getY(ch_idx, value);   
+        _nextion->line(_leftTop.x, y, _rightBottom.x, y, _channels[ch_idx].color );
+    }
+};
 
 

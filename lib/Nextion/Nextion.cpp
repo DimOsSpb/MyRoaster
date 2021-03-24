@@ -44,8 +44,20 @@ void Nextion::line(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby,uint16_t 
   sendCommand(_buf);
 };
 void Nextion::cropPic(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby){
-  sprintf(_buf, "picq %u,%u,%u,%u,%u",ltx,lty,rbx-ltx+1,rby-lty,0);
+  sprintf(_buf, "picq %u,%u,%u,%u,%u",ltx,lty,rbx-ltx+1,rby-lty+1,0);
   sendCommand(_buf);
 //  Serial.println(_buf);
 };
 
+// void Nextion::fill(uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy,uint16_t color){
+//   sprintf(_buf, "fill %u,%u,%u,%u,%u",ltx,lty,dx,dy,color);
+//   sendCommand(_buf);
+// };
+
+void Nextion::onPage(uint8_t pageNum){
+  _currentPage = pageNum;    
+}
+
+uint8_t Nextion::currentPage(){
+  return _currentPage;    
+}
