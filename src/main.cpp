@@ -13,14 +13,15 @@ Timer timerStatesRefresh(STATES_REFRESH_PERIOD);
 Timer timerEvents(CONTROL_READ_PERIOD);
 
 Dispatcher dispatcher;
+//Serial.print("forecastVal=");Serial.print(forecastVal);Serial.print(" OverVal=");Serial.print(overVal);Serial.print(" x1=");Serial.print(x1);Serial.print(" y1=");Serial.print(y1);Serial.print(" x2=");Serial.print(x2);Serial.print(" y2=");Serial.println(y2);
 
 void setup() {
-  Serial1.println("Hello");
+
   dispatcher.init();
   
   // открываем последовательный порт для отладки
   Serial.begin(9600);
-  //Serial.println("In setup");
+
 }
 
 void loop() {

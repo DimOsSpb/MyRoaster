@@ -9,12 +9,16 @@
 #define CHART_DX 264//320 
 #define CHART_DY 120 
 
+#define CHART_BT_CRECK 220
+
 #define CHART_BT_MAX 260
 #define CHART_ROR_MAX 25
 
 #define CHART_ROR_COLOR 65535u
 #define CHART_BT_COLOR 13663u
+#define CHART_FC_COLOR 64267u
 #define CHART_MAX_BT_COLOR 63488u
+#define CHART_BT220_COLOR 31281u
 
 
 #define BTN_ST_ON_COMMAND "Start"

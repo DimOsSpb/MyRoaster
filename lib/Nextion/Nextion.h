@@ -11,7 +11,7 @@ class Nextion{
         String readInput();
         void line(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby,uint16_t color);
         void cropPic(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby);
-        //void fill(uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy,uint16_t color);
+        void fill(uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy,uint16_t color);
         void onPage(uint8_t pageNum);
         uint8_t currentPage();
 

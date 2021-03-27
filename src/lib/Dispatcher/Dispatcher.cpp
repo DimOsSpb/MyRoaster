@@ -25,7 +25,7 @@ const RoastLevels _RL[10] ={
     {3,"Italian"}
 };
 
-Dispatcher::Dispatcher(): _nextion(NEXTIAN_RX, NEXTIAN_TX), _chart(&_nextion,0,0,CHART_DX,CHART_DY){};
+Dispatcher::Dispatcher(): _nextion(NEXTIAN_RX, NEXTIAN_TX), _chart(&_nextion,0,25,CHART_DX,CHART_DY+25){};
 
 void Dispatcher::init(){
     _profile.RoRFreq = DEFAULT_ROR_FREQ;
@@ -35,9 +35,11 @@ void Dispatcher::init(){
     _nextion.sendCommand("rest");
     _roaster.init();
 
-    _chart.initChanel(0,0,CHART_BT_MAX,CHART_BT_COLOR,2);
+    _chart.initChanel(0,50,CHART_BT_MAX,CHART_BT_COLOR,2);
     _chart.initChanel(1,0,CHART_ROR_MAX,CHART_ROR_COLOR,2);
     _chart.initChanel(2,0,CHART_BT_MAX,CHART_MAX_BT_COLOR,2);
+    _chart.initChanel(3,0,CHART_DX,CHART_FC_COLOR,1);
+    _chart.initChanel(4,0,CHART_DX,CHART_MAX_BT_COLOR,1);
 
     _refreshStatesCounter = 0;    
     _chartIndex = 0;
@@ -102,6 +104,7 @@ void Dispatcher::refreshStates(){
     String _btn_down_text;
     uint16_t x;
 
+
     if(_curRoasterStates->State == ROASTER_STATE_STARTED){
 
             //Chart-------------------------------------
@@ -110,6 +113,8 @@ void Dispatcher::refreshStates(){
                 }
                 if( _nextion.currentPage()==0 && _curRoasterStates->Time - _lastChartTim >= GRAPH_FREQUENCY){
 
+                    _chart.clearRight();
+                    _chart.lineG(2,RL_TEMPS[_profile.RL-1]);
                     _chart.addChanelValue(0,_curRoasterStates->BT);            
                     _chart.addChanelValue(1,_curRoasterStates->RoR);
                     _chart.chanelForecast(0);
@@ -121,14 +126,14 @@ void Dispatcher::refreshStates(){
 
                     if(_curRoasterStates->FC > 0){
                         x = _curRoasterStates->StopTime / (_curRoasterStates->FC / _chartFCIndex);
-                        Serial.print(x); 
-                        sprintf(_buf, "line %u,%u,%u,%u,2016",_chartFCIndex,0,_chartFCIndex,CHART_DY);
-                        _nextion.sendCommand(_buf); 
-                        sprintf(_buf, "line %u,%u,%u,%u,RED",x,0,x,CHART_DY);
-                        _nextion.sendCommand(_buf); 
+                        _chart.lineV(3,_chartFCIndex);
+                        _chart.lineV(4, x);
+                        //sprintf(_buf, "line %u,%u,%u,%u,2016",_chartFCIndex,0,_chartFCIndex,CHART_DY);
+                        //_nextion.sendCommand(_buf); 
+                        //sprintf(_buf, "line %u,%u,%u,%u,RED",x,0,x,CHART_DY);
+                        //_nextion.sendCommand(_buf); 
                     }
 
-                    _chart.line(2,RL_TEMPS[_profile.RL]);
                 }
             //chart---------------------------------
 
@@ -161,16 +166,11 @@ void Dispatcher::refreshStates(){
     sprintf(_buf, "page0.b_st.txt=\"%02u:%02u%s\"",time.Mins,time.Secs, _btn_down_text.c_str());
     _nextion.sendCommand(_buf);
     sprintf(_buf, "_st_t.txt=\"%02u:%02u\"",time.Mins,time.Secs);
-
     _nextion.sendCommand(_buf);  
 
     _reflectChanges_RL();
 
     _refreshStatesCounter++;
-
-
-    // Serial.print("StopTime: "); Serial.print(_curRoasterStates->StopTime);
-    // Serial.print("FCTime: "); Serial.println(_curRoasterStates->FC);
 
      
 };
@@ -179,12 +179,10 @@ void Dispatcher::refreshStates(){
 
 void Dispatcher::listEvents(){
     String input = _nextion.readInput();
-    //Serial.print("input :");
-    //Serial.println(input);
+
     for(unsigned int i=0; i<input.length(); i++){
         if(memcmp(&input[i],ON_PAGE_COMMAND ,sizeof(ON_PAGE_COMMAND)-1)==0){
             _nextion.onPage(input[i+sizeof(ON_PAGE_COMMAND)-1]);
-            Serial.println(_nextion.currentPage());
             i+=sizeof(ON_PAGE_COMMAND+2);
 
         }        
