@@ -26,7 +26,7 @@ void setup() {
 
 void loop() {
 
-
+    //Serial.println("Hello");
     //if (timerEvents.isReady()) {           // Handling control events... 
       dispatcher.listEvents();
     //}
