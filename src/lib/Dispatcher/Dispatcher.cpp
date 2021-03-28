@@ -89,7 +89,11 @@ void Dispatcher::_reflectChanges_RL(){
 
     sprintf(_buf, "page0.t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
     _nextion.sendCommand(_buf); 
-    sprintf(_buf, "page0.t_max.txt=\"%u\"",RL_TEMPS[_pr_i]);
+    sprintf(_buf, "page0.t_max.txt=\"max%u\"",RL_TEMPS[_pr_i]);
+    _nextion.sendCommand(_buf);
+    sprintf(_buf, "page1.t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
+    _nextion.sendCommand(_buf); 
+    sprintf(_buf, "page1.t_max.txt=\"max%u\"",RL_TEMPS[_pr_i]);
     _nextion.sendCommand(_buf);
 
    
