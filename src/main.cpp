@@ -6,7 +6,7 @@
 #include <Roaster.h>
 #include <Dispatcher.h>
 
-#define STATES_REFRESH_PERIOD 500
+#define STATES_REFRESH_PERIOD 1000
 #define CONTROL_READ_PERIOD 100
 
 Timer timerStatesRefresh(STATES_REFRESH_PERIOD);

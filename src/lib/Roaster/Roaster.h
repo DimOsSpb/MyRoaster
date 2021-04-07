@@ -15,7 +15,8 @@
 struct RoastProfile
 {
     uint8_t RoRFreq;        //Frequency of RoR calculation in sec
-    uint8_t DTR;             //Development Ratio – a time ratio: % of the time of first crack in relation to the overall time
+    uint8_t DTR;            //Development Ratio – a time ratio: % of the time of first crack in relation to the overall time
+    uint8_t PDT;            //Planned Development Time in min
     uint8_t RL;             //Roast LEVEL
 };
 struct RoasterStates

@@ -9,18 +9,27 @@ Chart::Chart(Nextion *nextion,uint16_t ltx,uint16_t lty, uint16_t rbx,uint16_t r
         _rightBottom.y = rby;
         _deltaXY = float(rbx-ltx)/(rby-lty);
     }
+    init();
 };
 
-void Chart::initChanel(uint8_t ch_idx,int32_t MinValue,int32_t MaxValue,uint16_t color,uint8_t depth){
+void Chart::init(){
+    _chartCurX = 0;  
+}
+void Chart::initChanel(uint8_t ch_idx,int32_t minValueX,int32_t maxValueX,int32_t minValueY,int32_t maxValueY,uint16_t color,uint8_t depth){
     if(ch_idx >= 0 && ch_idx < CHART_CHANELS){
-        _channels[ch_idx].minValue = MinValue;
-        _channels[ch_idx].maxValue = MaxValue;
+        _channels[ch_idx].curX = 0;
+        _channels[ch_idx].minValueY = minValueY;
+        _channels[ch_idx].maxValueY = maxValueY;
         _channels[ch_idx].color = color;
         _channels[ch_idx].depth = depth;
         _channels[ch_idx].lastValues[0] = 0;
         _channels[ch_idx].lastValues[1] = 0;
         _channels[ch_idx].lastValues[2] = 0;
-        if(MaxValue>0)_channels[ch_idx].pointsInDivision = float(_rightBottom.y-_leftTop.y)/(MaxValue-MinValue);
+        if(maxValueY > minValueY)
+            _channels[ch_idx].pointsInDivisionY = float(_rightBottom.y-_leftTop.y)/(maxValueY-minValueY);
+        if(maxValueX > minValueX)
+            _channels[ch_idx].pointsInDivisionX = float(_rightBottom.x-_leftTop.x)/(maxValueX-minValueX);
+        
     }
 };
 
@@ -33,12 +42,12 @@ void Chart::keepChartLastValue(uint8_t ch_idx, int32_t _value, int32_t _filtered
 
 const int32_t Chart::getY(uint8_t ch_idx,int32_t _value){
     int32_t val_y;
-    if(_value<=_channels[ch_idx].minValue) return _rightBottom.y;
-    if(_value>_channels[ch_idx].maxValue) return _leftTop.y;
+    if(_value<=_channels[ch_idx].minValueY) return _rightBottom.y;
+    if(_value>_channels[ch_idx].maxValueY) return _leftTop.y;
     else 
     {
         
-        val_y = (_value - _channels[ch_idx].minValue)*_channels[ch_idx].pointsInDivision;
+        val_y = (_value - _channels[ch_idx].minValueY)*_channels[ch_idx].pointsInDivisionY;
         if(val_y > _rightBottom.y) return _leftTop.y; 
         else
             val_y = _rightBottom.y - val_y;
@@ -71,10 +80,10 @@ void Chart::clearRight(){
 void Chart::addChanelValue(uint8_t ch_idx,int32_t _value){
     uint16_t val_x1,val_y1,val_y2;
     int32_t last_val,filtered_val;
-    Serial.print("BT=220 - ");Serial.println(getY(0, 220));
-    Serial.print("BT=200 - ");Serial.println(getY(0, 200));
-    Serial.print("BT=196 - ");Serial.println(getY(0, 196));
-    Serial.println("---");
+    // Serial.print("BT=220 - ");Serial.println(getY(0, 220));
+    // Serial.print("BT=200 - ");Serial.println(getY(0, 200));
+    // Serial.print("BT=196 - ");Serial.println(getY(0, 196));
+    // Serial.println("---");
 
     if(ch_idx >= 0  && ch_idx < CHART_CHANELS && _channels[ch_idx].depth>0){
         if(_channels[ch_idx].curX) {
@@ -144,17 +153,17 @@ void Chart::chanelForecast(uint8_t ch_idx){
             ratio = float(secondValue) - firstValue;
             leftPosRatio = (_rightBottom.x - _channels[ch_idx].curX) / DELTA_P;
             forecastVal = secondValue + (ratio*leftPosRatio);
-            if(forecastVal>_channels[ch_idx].maxValue) 
+            if(forecastVal>_channels[ch_idx].maxValueY) 
             {
 
-                overVal = abs(fabs(forecastVal) - abs(_channels[ch_idx].maxValue))*_channels[ch_idx].pointsInDivision/_deltaXY;
-                forecastVal = _channels[ch_idx].maxValue;
+                overVal = abs(fabs(forecastVal) - abs(_channels[ch_idx].maxValueY))*_channels[ch_idx].pointsInDivisionY/_deltaXY;
+                forecastVal = _channels[ch_idx].maxValueY;
 
             }
-            if(forecastVal<_channels[ch_idx].minValue) 
+            if(forecastVal<_channels[ch_idx].minValueY) 
             {
-                overVal = abs(abs(_channels[ch_idx].minValue) - fabs(forecastVal))*_channels[ch_idx].pointsInDivision/_deltaXY;
-                forecastVal=_channels[ch_idx].minValue;
+                overVal = abs(abs(_channels[ch_idx].minValueY) - fabs(forecastVal))*_channels[ch_idx].pointsInDivisionY/_deltaXY;
+                forecastVal=_channels[ch_idx].minValueY;
             }
             /////////////////////////////////////////////////////////////////////////////////////////
         }
@@ -182,7 +191,7 @@ void Chart::lineG(uint8_t ch_idx,int32_t valueY){
 };
 
 void Chart::lineV(uint8_t ch_idx,int32_t valueX){
-    if(_channels[ch_idx].depth>0 && valueX <= _channels[ch_idx].maxValue && valueX >= _channels[ch_idx].minValue)
+    if(_channels[ch_idx].depth>0 && valueX <= _channels[ch_idx].maxValueY && valueX >= _channels[ch_idx].minValueY)
         _nextion->line(valueX, _leftTop.y, valueX, _rightBottom.y, _channels[ch_idx].color );
     
 };

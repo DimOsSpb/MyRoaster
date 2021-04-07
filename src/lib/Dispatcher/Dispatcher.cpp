@@ -29,29 +29,35 @@ Dispatcher::Dispatcher(): _nextion(NEXTIAN_RX, NEXTIAN_TX), _chart(&_nextion,0,2
 
 void Dispatcher::init(){
     _profile.RoRFreq = DEFAULT_ROR_FREQ;
-    _profile.DTR = DEFAULT_DTR;
     _nextion.init();
 
     _nextion.sendCommand("rest");
     _roaster.init();
 
-    _chart.initChanel(0,50,CHART_BT_MAX,CHART_BT_COLOR,2);
-    _chart.initChanel(1,0,CHART_ROR_MAX,CHART_ROR_COLOR,2);
-    _chart.initChanel(2,0,CHART_BT_MAX,CHART_MAX_BT_COLOR,2);
-    _chart.initChanel(3,0,CHART_DX,CHART_FC_COLOR,1);
-    _chart.initChanel(4,0,CHART_DX,CHART_MAX_BT_COLOR,1);
-
-    _refreshStatesCounter = 0;    
+    _initChart();
+    
     _chartIndex = 0;
-    changeRoastLevel(5,false);
+    changeRoastLevel(DEFAULT_RL,false);
+    changeRoastTime(DEFAULT_PDT,false);
     refreshStates();
 
 };
 
+void Dispatcher::_initChart(){
+    _chart.init();
+    _chart.initChanel(0,0,_profile.PDT*CHART_X_MAX_RATIO,50,CHART_BT_MAX,CHART_BT_COLOR,2);
+    _chart.initChanel(1,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_ROR_MAX,CHART_ROR_COLOR,2);
+    _chart.initChanel(2,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_BT_MAX,CHART_MAX_BT_COLOR,2);
+    _chart.initChanel(3,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_DX,CHART_FC_COLOR,1);
+    _chart.initChanel(4,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_DX,CHART_MAX_BT_COLOR,1);
+    _chart.initChanel(5,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_DX,CHART_PDT_COLOR,3);
+    _chart.initChanel(6,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_DX,CHART_PFC_COLOR,1);
+}
+
 void Dispatcher::startRoast(){
     sprintf(_buf, "ref page0");  //cls
     _nextion.sendCommand(_buf);    
-    _refreshStatesCounter = 0;    
+    _initChart();
     _chartIndex = 0;
     _roaster.start(_profile);
 }
@@ -84,17 +90,31 @@ void Dispatcher::changeRoastLevel(uint8_t level, bool _reflect = true){
     }
 }
 
-void Dispatcher::_reflectChanges_RL(){
-    uint8_t _pr_i = _profile.RL-1;
-
-    sprintf(_buf, "page0.t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
-    _nextion.sendCommand(_buf); 
-    sprintf(_buf, "page0.t_max.txt=\"%u\"",RL_TEMPS[_pr_i]);
-    _nextion.sendCommand(_buf);
-
-   
+void Dispatcher::changeRoastTime(uint8_t value, bool _reflect = true){
+    if(value > 0 && value < DEFAULT_DTR){
+        _profile.PDT = value;
+        if(_reflect) _reflectChanges_PDT();
+    }
 }
 
+void Dispatcher::_reflectChanges_RL(){
+    uint8_t _pr_i = _profile.RL-1;
+    sprintf(_buf, "t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
+    _nextion.sendCommand(_buf); 
+    sprintf(_buf, "t_max.txt=\"%u\"",RL_TEMPS[_pr_i]);
+    _nextion.sendCommand(_buf);
+}
+
+void Dispatcher::_reflectChanges_PDT(){
+    sprintf(_buf, "t_rt.txt=\"%u\"",_profile.PDT);
+    _nextion.sendCommand(_buf); 
+}
+
+void Dispatcher::_onNextionPage(uint8_t page){
+    _nextion.onPage(page);
+    _reflectChanges_RL();
+    _reflectChanges_PDT();
+}
 void Dispatcher::refreshStates(){
     
     RoasterStates *_curRoasterStates = _roaster.readStates();
@@ -105,72 +125,74 @@ void Dispatcher::refreshStates(){
     uint16_t x;
 
 
-    if(_curRoasterStates->State == ROASTER_STATE_STARTED){
+    if( _nextion.currentPage()==0){
+            
+        if(_curRoasterStates->State == ROASTER_STATE_STARTED){
+
+
 
             //Chart-------------------------------------
-                if(_chart.fieldIsOver()){
-                    stopRoast();  
-                }
-                if( _nextion.currentPage()==0 && _curRoasterStates->Time - _lastChartTim >= GRAPH_FREQUENCY){
+            if(_chart.fieldIsOver()){
+                stopRoast();  
+            }
+            if(_curRoasterStates->Time - _lastChartTim >= GRAPH_FREQUENCY){
 
-                    _chart.clearRight();
-                    _chart.lineG(2,RL_TEMPS[_profile.RL-1]);
-                    _chart.addChanelValue(0,_curRoasterStates->BT);            
-                    _chart.addChanelValue(1,_curRoasterStates->RoR);
-                    _chart.chanelForecast(0);
+                _chart.clearRight();
+                _chart.lineG(2,RL_TEMPS[_profile.RL-1]);
+                _chart.addChanelValue(0,_curRoasterStates->BT);            
+                _chart.chanelForecast(0);
+                _chart.addChanelValue(1,_curRoasterStates->RoR);
+                //_chart.lineV(5,_chartFCIndex);
+                //_chart.lineV(6,_chartFCIndex);
 
-                        
+                    
 
-                    _lastChartTim = _curRoasterStates->Time;
-                    _chartIndex++;
+                _lastChartTim = _curRoasterStates->Time;
+                _chartIndex++;
 
-                    if(_curRoasterStates->FC > 0){
-                        x = _curRoasterStates->StopTime / (_curRoasterStates->FC / _chartFCIndex);
-                        _chart.lineV(3,_chartFCIndex);
-                        _chart.lineV(4, x);
-                        //sprintf(_buf, "line %u,%u,%u,%u,2016",_chartFCIndex,0,_chartFCIndex,CHART_DY);
-                        //_nextion.sendCommand(_buf); 
-                        //sprintf(_buf, "line %u,%u,%u,%u,RED",x,0,x,CHART_DY);
-                        //_nextion.sendCommand(_buf); 
-                    }
+                if(_curRoasterStates->FC > 0){
+                    x = _curRoasterStates->StopTime / (_curRoasterStates->FC / _chartFCIndex);
+                    _chart.lineV(3,_chartFCIndex);
+                    _chart.lineV(4, x);
 
                 }
+            }
+    
             //chart---------------------------------
 
-        sprintf(_buf, "page0.b_fc.txt=\"%02u:%02u\r\n  FC\"",timeFC.Mins,timeFC.Secs);
-        _nextion.sendCommand(_buf);
-
-        if(_curRoasterStates->FC > 0){
-            leftTime = getDHMS(_curRoasterStates->LeftTime);
-            if(_curRoasterStates->StopFlag){
-                sprintf(_buf, "page0.b_st.bco2=%s",_refreshStatesCounter & 1 ? "RED" : "19188");
-                _nextion.sendCommand(_buf);                
-            }
-            sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",leftTime.Mins,leftTime.Secs);
+            sprintf(_buf, "page0.b_fc.txt=\"%02u:%02u\r\n  FC\"",timeFC.Mins,timeFC.Secs);
             _nextion.sendCommand(_buf);
 
+            if(_curRoasterStates->FC > 0){
+                if(_curRoasterStates->StopFlag){
+                    sprintf(_buf, "page0.b_st.pco2=%s", _chartIndex & 1 ? "RED" : "61277");
+                    _nextion.sendCommand(_buf);                
+                }
+
+
+            }
+            else 
+                sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",0,0);
+
+            _btn_down_text = BTN_ST_OFF_DOWN_TEXT;
         }
-        else 
-            sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",0,0);
+        else
+            _btn_down_text = BTN_ST_ON_DOWN_TEXT;
 
-        _btn_down_text = BTN_ST_OFF_DOWN_TEXT;
+        sprintf(_buf, "page0.b_st.txt=\"%02u:%02u%s\"",time.Mins,time.Secs, _btn_down_text.c_str());
+        _nextion.sendCommand(_buf);
+
+        sprintf(_buf, "page0.t_ror.txt=\"%u\"",_curRoasterStates->RoR);
+        _nextion.sendCommand(_buf); 
+        sprintf(_buf, "page0.t_bt.txt=\"%u\"",_curRoasterStates->BT);
+        _nextion.sendCommand(_buf);
+
+
+        leftTime = getDHMS(_curRoasterStates->LeftTime);
+        sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",leftTime.Mins,leftTime.Secs);
+        _nextion.sendCommand(_buf);         
+
     }
-    else
-        _btn_down_text = BTN_ST_ON_DOWN_TEXT;
-
-    sprintf(_buf, "page0.t_ror.txt=\"%u\"",_curRoasterStates->RoR);
-    _nextion.sendCommand(_buf); 
-    sprintf(_buf, "page0.t_bt.txt=\"%u\"",_curRoasterStates->BT);
-    _nextion.sendCommand(_buf); 
- 
-    sprintf(_buf, "page0.b_st.txt=\"%02u:%02u%s\"",time.Mins,time.Secs, _btn_down_text.c_str());
-    _nextion.sendCommand(_buf);
-    sprintf(_buf, "_st_t.txt=\"%02u:%02u\"",time.Mins,time.Secs);
-    _nextion.sendCommand(_buf);  
-
-    _reflectChanges_RL();
-
-    _refreshStatesCounter++;
 
      
 };
@@ -178,36 +200,46 @@ void Dispatcher::refreshStates(){
 
 
 void Dispatcher::listEvents(){
-    String input = _nextion.readInput();
+    byte input[10];
+    if(_nextion.readInput(9,&input[0]) > 0){
 
-    for(unsigned int i=0; i<input.length(); i++){
-        if(memcmp(&input[i],ON_PAGE_COMMAND ,sizeof(ON_PAGE_COMMAND)-1)==0){
-            _nextion.onPage(input[i+sizeof(ON_PAGE_COMMAND)-1]);
-            i+=sizeof(ON_PAGE_COMMAND+2);
-
-        }        
-        else if(memcmp(&input[i],BTN_ST_ON_COMMAND ,sizeof(BTN_ST_ON_COMMAND)-1)==0){
-            i+=sizeof(BTN_ST_ON_COMMAND)-2;
-            startRoast();
-
+        switch ((int)input[0])
+        {
+            case ON_PAGE_COMMAND:
+                //Serial.print("onPage="); Serial.println(input[1]);
+                _onNextionPage(input[1]);
+                break;
+            case BTN_ST_ON_COMMAND:
+                //Serial.println("Start");
+                startRoast();
+                break;
+            case BTN_ST_OFF_COMMAND:
+                //Serial.println("Stop");
+                stopRoast();
+                break;
+            case BTN_FC_ON_COMMAND:
+                //Serial.println("FC");
+                startFirstCrack();
+                break;
+            case BTN_FC_OFF_COMMAND:
+                //Serial.println("SFC");
+                stopFirstCrack();
+                break;
+            case RL_COMMAND:
+                //Serial.print("RL="); Serial.println(input[1]);
+                changeRoastLevel(input[1]);
+                break;                                
+            case RT_COMMAND:
+                //Serial.print("RL="); Serial.println(input[1]);
+                changeRoastTime(input[1]);
+             
+                break;                                
+            default:
+                break;
         }
-        else if(memcmp(&input[i],BTN_ST_OFF_COMMAND ,sizeof(BTN_ST_OFF_COMMAND)-1)==0){
-            i+=sizeof(BTN_ST_OFF_COMMAND)-2;
-            stopRoast();
-
-        }
-        else if(memcmp(&input[i],BTN_FC_ON_COMMAND ,sizeof(BTN_FC_ON_COMMAND)-1)==0){
-            i+=sizeof(BTN_FC_ON_COMMAND)-2;
-            startFirstCrack();
-
-        }
-        else if(memcmp(&input[i],BTN_RL_COMMAND ,sizeof(BTN_RL_COMMAND)-1)==0){
-            changeRoastLevel(input[i+sizeof(BTN_RL_COMMAND)-1]);
-            i+=sizeof(BTN_RL_COMMAND+2);
-
-        }
-                 
     }
+
+
 }
 
 

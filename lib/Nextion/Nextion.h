@@ -8,7 +8,7 @@ class Nextion{
         Nextion(uint8_t RX, uint8_t TX);
         void sendCommand(const char* cmd);
         void init();
-        String readInput();
+        uint8_t readInput(uint8_t max, byte *buffer);
         void line(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby,uint16_t color);
         void cropPic(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby);
         void fill(uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy,uint16_t color);
