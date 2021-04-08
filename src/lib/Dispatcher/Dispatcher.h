@@ -15,7 +15,7 @@
 #define CHART_BT_CRECK 220
 
 #define CHART_BT_MAX 260
-#define CHART_ROR_MAX 25
+#define CHART_ROR_MAX 35
 
 #define CHART_ROR_COLOR 65535u
 #define CHART_BT_COLOR 13663u
