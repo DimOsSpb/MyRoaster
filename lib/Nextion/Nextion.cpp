@@ -88,6 +88,18 @@ void Nextion::fill(uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy,uint16_t co
   sendCommand(_buf);
 };
 
+void Nextion::text(String txt, uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy, uint8_t fontN, uint16_t color){
+
+
+  
+  sprintf(_buf, "xstr %u,%u,%u,%u,%u,%u,0,1,1,0,\"%s\"",ltx,lty,dx,dy,fontN,color,txt.c_str());
+
+//Serial.print("_buf=");Serial.println(_buf);
+
+  sendCommand(_buf);
+};
+
+
 void Nextion::onPage(uint8_t pageNum){
   _currentPage = pageNum;    
 }

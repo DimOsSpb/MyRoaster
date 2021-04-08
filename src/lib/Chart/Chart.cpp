@@ -13,13 +13,16 @@ Chart::Chart(Nextion *nextion,uint16_t ltx,uint16_t lty, uint16_t rbx,uint16_t r
 };
 
 void Chart::init(){
-    _chartCurX = 0;  
+    _chartCurrentX = 0;  
 }
 void Chart::initChanel(uint8_t ch_idx,int32_t minValueX,int32_t maxValueX,int32_t minValueY,int32_t maxValueY,uint16_t color,uint8_t depth){
     if(ch_idx >= 0 && ch_idx < CHART_CHANELS){
-        _channels[ch_idx].curX = 0;
+        _channels[ch_idx].counter = 0;
+        _channels[ch_idx].lastX = 0;
         _channels[ch_idx].minValueY = minValueY;
         _channels[ch_idx].maxValueY = maxValueY;
+        _channels[ch_idx].minValueX = minValueX;
+        _channels[ch_idx].maxValueX = maxValueX;
         _channels[ch_idx].color = color;
         _channels[ch_idx].depth = depth;
         _channels[ch_idx].lastValues[0] = 0;
@@ -39,6 +42,17 @@ void Chart::keepChartLastValue(uint8_t ch_idx, int32_t _value, int32_t _filtered
     _channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1] = _filteredValue;
     _channels[ch_idx].lastValue = _value;
 };
+const int32_t Chart::getX(uint8_t ch_idx,int32_t _value){
+    int32_t _val;
+    if(_value<=_channels[ch_idx].minValueX) return _leftTop.x;
+    if(_value>_channels[ch_idx].maxValueX) return _rightBottom.x;
+    else 
+    {
+        _val =  _leftTop.x + (_value - _channels[ch_idx].minValueX)*_channels[ch_idx].pointsInDivisionX;
+        if(_val > _rightBottom.x) return _rightBottom.x; 
+    }
+    return _val;
+};
 
 const int32_t Chart::getY(uint8_t ch_idx,int32_t _value){
     int32_t val_y;
@@ -46,11 +60,8 @@ const int32_t Chart::getY(uint8_t ch_idx,int32_t _value){
     if(_value>_channels[ch_idx].maxValueY) return _leftTop.y;
     else 
     {
-        
-        val_y = (_value - _channels[ch_idx].minValueY)*_channels[ch_idx].pointsInDivisionY;
-        if(val_y > _rightBottom.y) return _leftTop.y; 
-        else
-            val_y = _rightBottom.y - val_y;
+        val_y = _rightBottom.y - (_value - _channels[ch_idx].minValueY)*_channels[ch_idx].pointsInDivisionY;
+        if(val_y > _rightBottom.y) return _rightBottom.y; 
     }
     return val_y;
 };
@@ -66,7 +77,7 @@ const int32_t Chart::average(int32_t *_values){
 
 bool Chart::fieldIsOver(){
     for (uint8_t i = 0; i < CHART_CHANELS; i++)
-        if(_channels[i].curX>_rightBottom.x)
+        if(_channels[i].lastX>=_rightBottom.x)
             return true;
     return false;
     
@@ -74,11 +85,11 @@ bool Chart::fieldIsOver(){
 };
 
 void Chart::clearRight(){
-    _nextion->cropPic(_chartCurX, _leftTop.y, _rightBottom.x, _rightBottom.y);
+    _nextion->cropPic(_chartCurrentX, _leftTop.y, _rightBottom.x, _rightBottom.y);
 };
 
-void Chart::addChanelValue(uint8_t ch_idx,int32_t _value){
-    uint16_t val_x1,val_y1,val_y2;
+void Chart::addChanelValue(uint8_t ch_idx,int32_t valueX,int32_t _valueY){
+    uint16_t val_x1,val_x2,val_y1,val_y2;
     int32_t last_val,filtered_val;
     // Serial.print("BT=220 - ");Serial.println(getY(0, 220));
     // Serial.print("BT=200 - ");Serial.println(getY(0, 200));
@@ -86,25 +97,26 @@ void Chart::addChanelValue(uint8_t ch_idx,int32_t _value){
     // Serial.println("---");
 
     if(ch_idx >= 0  && ch_idx < CHART_CHANELS && _channels[ch_idx].depth>0){
-        if(_channels[ch_idx].curX) {
+        if(_channels[ch_idx].counter) {
             last_val = _channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1];
-            if(_channels[ch_idx].lastValue != _value ) 
-                filtered_val = last_val + (_value - last_val) * CHART_FILTER_RATIO; // CHART_VALUE_FILTER_RATIO - коэффициент фильтрации 0.. 1. Обычно около 0.01-0.1 (то бишь float)
-            else filtered_val = _value;
+            if(_channels[ch_idx].lastValue != _valueY ) 
+                filtered_val = last_val + (_valueY - last_val) * CHART_FILTER_RATIO; // CHART_VALUE_FILTER_RATIO - коэффициент фильтрации 0.. 1. Обычно около 0.01-0.1 (то бишь float)
+            else filtered_val = _valueY;
         }
         else{
-            last_val = _value;
-            filtered_val = _value;
+            last_val = _valueY;
+            filtered_val = _valueY;
         }
 
 
+        val_x2 = getX(ch_idx, valueX);
         val_y2 = getY(ch_idx, filtered_val);
-        if(_channels[ch_idx].curX){
-            val_x1 = _channels[ch_idx].curX - 1;
+        if(_channels[ch_idx].counter){
+            val_x1 = _channels[ch_idx].lastX;
             val_y1 = getY(ch_idx, last_val);
         }
         else { 
-            val_x1 = _channels[ch_idx].curX;
+            val_x1 = val_x2;
             val_y1 = val_y2;
         }
 
@@ -112,19 +124,21 @@ void Chart::addChanelValue(uint8_t ch_idx,int32_t _value){
         {
             uint8_t y1 = val_y1 > _leftTop.y ? val_y1-i : val_y1,
                     y2 = val_y2 > _leftTop.y ? val_y2-i : val_y2;
-            _nextion->line( val_x1, y1, _channels[ch_idx].curX, y2, _channels[ch_idx].color );
+            _nextion->line( val_x1, y1, val_x2, y2, _channels[ch_idx].color );
                 
         }
+        
 
+        _channels[ch_idx].counter++;
+        _channels[ch_idx].lastX = val_x2;
+       if(_channels[ch_idx].lastX > _chartCurrentX) _chartCurrentX = _channels[ch_idx].lastX;
 
-       if(_channels[ch_idx].curX++ > _chartCurX) _chartCurX = _channels[ch_idx].curX;
-
-        keepChartLastValue(ch_idx, _value, filtered_val);
+        keepChartLastValue(ch_idx, _valueY, filtered_val);
     }
 };
 
-#define DELTA_P 2 //difference curX between average lastValues[0,1,2] and average lastValues[3,4,5]
-void Chart::chanelForecast(uint8_t ch_idx){
+#define DELTA_P 2 //difference currentX between average lastValues[0,1,2] and average lastValues[3,4,5]
+void Chart::chanelForecast(uint8_t ch_idx, uint16_t color){
     int32_t firstValue,secondValue,overVal=0;
     float forecastVal;
     float ratio;            //Value Ghange ratio
@@ -133,13 +147,13 @@ void Chart::chanelForecast(uint8_t ch_idx){
 
     uint16_t x1,x2,y1,y2;
 
-    if(_channels[ch_idx].depth > 0 && _channels[ch_idx].curX > CHARRT_STAT_VALUES-1 && _channels[ch_idx].curX<_rightBottom.x-1) {     //if statistics accumulated
+    if(_channels[ch_idx].depth > 0 && _channels[ch_idx].counter > CHARRT_STAT_VALUES-1 && _channels[ch_idx].lastX<_rightBottom.x-1) {     //if statistics accumulated
 
 
         firstValue = average(&_channels[ch_idx].lastValues[0]); //average lastValues[0,1]
         secondValue = average(&_channels[ch_idx].lastValues[2]); //average lastValues[2,3]
 
-        x1 = _channels[ch_idx].curX+1;    //all times x1,xy here
+        x1 = _channels[ch_idx].lastX+1;    //all times x1,xy here
         y1 = getY(ch_idx,secondValue);
 
         //clearRight();
@@ -151,7 +165,7 @@ void Chart::chanelForecast(uint8_t ch_idx){
             ////////////////////////////////// FORECAST /////////////////////////////////////////////
 
             ratio = float(secondValue) - firstValue;
-            leftPosRatio = (_rightBottom.x - _channels[ch_idx].curX) / DELTA_P;
+            leftPosRatio = (_rightBottom.x - _channels[ch_idx].lastX) / DELTA_P;
             forecastVal = secondValue + (ratio*leftPosRatio);
             if(forecastVal>_channels[ch_idx].maxValueY) 
             {
@@ -178,7 +192,7 @@ void Chart::chanelForecast(uint8_t ch_idx){
         y2 = getY(ch_idx, uint16_t(forecastVal));        
         
 
-        _nextion->line(x1, y1, x2, y2, 29614);
+        _nextion->line(x1, y1, x2, y2, color);
     }
 };
 
@@ -190,15 +204,33 @@ void Chart::lineG(uint8_t ch_idx,int32_t valueY){
     }
 };
 
-void Chart::lineV(uint8_t ch_idx,int32_t valueX){
-    if(_channels[ch_idx].depth>0 && valueX <= _channels[ch_idx].maxValueY && valueX >= _channels[ch_idx].minValueY)
-        _nextion->line(valueX, _leftTop.y, valueX, _rightBottom.y, _channels[ch_idx].color );
+void Chart::lineV(uint8_t ch_idx,int32_t valueX, String txt){
+    int32_t x;
+    if(_channels[ch_idx].depth>0 && valueX <= _channels[ch_idx].maxValueX && valueX >= _channels[ch_idx].minValueX){
+
+        x = (valueX * _channels[ch_idx].pointsInDivisionX) - (_channels[ch_idx].depth * 0.5);
+        if(x < _leftTop.x) x = _leftTop.x;
+        for (uint8_t i = 0; i < _channels[ch_idx].depth; i++)
+        {
+            _nextion->line(x, _leftTop.y, x, _rightBottom.y, _channels[ch_idx].color );
+            if(x < _rightBottom.x) x++ ;
+            else x = _rightBottom.x;
+        }
+        if(txt!=""){
+            _nextion->text(txt, x+2, _rightBottom.y-17,36,17,2,_channels[ch_idx].color);     
+        }
+    }
+};
+
+void Chart::lineX(uint8_t ch_idx,int32_t positionX){
+    if(_channels[ch_idx].depth>0 && positionX <= _rightBottom.x && positionX >= _leftTop.x)
+        _nextion->line(positionX, _leftTop.y, positionX, _rightBottom.y, _channels[ch_idx].color );
     
 };
 
-void Chart::lineV(uint8_t ch_idx){
+void Chart::lineX(uint8_t ch_idx){
     if(_channels[ch_idx].depth>0)
-        _nextion->line(_channels[ch_idx].curX, _leftTop.y, _channels[ch_idx].curX, _rightBottom.y, _channels[ch_idx].color );
+        _nextion->line(_channels[ch_idx].lastX, _leftTop.y, _channels[ch_idx].lastX, _rightBottom.y, _channels[ch_idx].color );
     
 };
 

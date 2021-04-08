@@ -34,43 +34,48 @@ void Dispatcher::init(){
     _nextion.sendCommand("rest");
     _roaster.init();
 
-    _initChart();
     
-    _chartIndex = 0;
     changeRoastLevel(DEFAULT_RL,false);
     changeRoastTime(DEFAULT_PDT,false);
+    changeDTR(DEFAULT_DTR,false);
+
+    _initChart();
     refreshStates();
 
 };
 
 void Dispatcher::_initChart(){
+    uint32_t pdt_plus = (_profile.PDT+_profile.PDT*0.01*CHART_X_ADD_PROCENT) * CHART_X_MAX_RATIO;
+
     _chart.init();
-    _chart.initChanel(0,0,_profile.PDT*CHART_X_MAX_RATIO,50,CHART_BT_MAX,CHART_BT_COLOR,2);
-    _chart.initChanel(1,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_ROR_MAX,CHART_ROR_COLOR,2);
-    _chart.initChanel(2,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_BT_MAX,CHART_MAX_BT_COLOR,2);
-    _chart.initChanel(3,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_DX,CHART_FC_COLOR,1);
-    _chart.initChanel(4,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_DX,CHART_MAX_BT_COLOR,1);
-    _chart.initChanel(5,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_DX,CHART_PDT_COLOR,3);
-    _chart.initChanel(6,0,_profile.PDT*CHART_X_MAX_RATIO,0,CHART_DX,CHART_PFC_COLOR,1);
+    _chart.initChanel(0,0,pdt_plus,50,CHART_BT_MAX,CHART_BT_COLOR,2);
+    _chart.initChanel(1,0,pdt_plus,0,CHART_ROR_MAX,CHART_ROR_COLOR,2);
+    _chart.initChanel(2,0,pdt_plus,0,CHART_BT_MAX,CHART_MAX_BT_COLOR,2);
+    _chart.initChanel(3,0,pdt_plus,0,CHART_DX,CHART_FC_COLOR,1);
+    _chart.initChanel(4,0,pdt_plus,0,CHART_DX,CHART_MAX_BT_COLOR,1);
+    _chart.initChanel(5,0,pdt_plus,0,CHART_DX,CHART_PDT_COLOR,3);
+    _chart.initChanel(6,0,pdt_plus,0,CHART_DX,CHART_PFC_COLOR,1);
 }
 
 void Dispatcher::startRoast(){
     sprintf(_buf, "ref page0");  //cls
     _nextion.sendCommand(_buf);    
     _initChart();
-    _chartIndex = 0;
     _roaster.start(_profile);
 }
 void Dispatcher::stopRoast(){
-    sprintf(_buf, "page0.b_st.bco2=19188");
-    _nextion.sendCommand(_buf);    
-    _roaster.stop();
+    if(_roaster.isStarted()){
+        sprintf(_buf, "page0.b_st.bco2=61277");
+        _nextion.sendCommand(_buf);    
+        sprintf(_buf, "page0.b_st.val=0");
+        _nextion.sendCommand(_buf);    
+        _roaster.stop();
+    }
 }
 
 
 void Dispatcher::startFirstCrack(){
     _roaster.FC(DEFAULT_DTR);
-    _chartFCIndex=_chartIndex;
 }
 
 void Dispatcher::stopFirstCrack(){
@@ -91,9 +96,15 @@ void Dispatcher::changeRoastLevel(uint8_t level, bool _reflect = true){
 }
 
 void Dispatcher::changeRoastTime(uint8_t value, bool _reflect = true){
-    if(value > 0 && value < DEFAULT_DTR){
+    if(value > 0 && value <= MAX_PDT){
         _profile.PDT = value;
         if(_reflect) _reflectChanges_PDT();
+    }
+}
+void Dispatcher::changeDTR(uint8_t value, bool _reflect = true){
+    if(value > 0 && value <= MAX_DTR){
+        _profile.DTR = value;
+        if(_reflect) _reflectChanges_DTR();
     }
 }
 
@@ -110,6 +121,11 @@ void Dispatcher::_reflectChanges_PDT(){
     _nextion.sendCommand(_buf); 
 }
 
+void Dispatcher::_reflectChanges_DTR(){
+    sprintf(_buf, "t_rr.txt=\"%u\"",_profile.DTR);
+    _nextion.sendCommand(_buf); 
+}
+
 void Dispatcher::_onNextionPage(uint8_t page){
     _nextion.onPage(page);
     _reflectChanges_RL();
@@ -120,40 +136,47 @@ void Dispatcher::refreshStates(){
     RoasterStates *_curRoasterStates = _roaster.readStates();
     DHMS time = getDHMS(_curRoasterStates->Time);
     DHMS timeFC = getDHMS(_curRoasterStates->FC);
-    DHMS leftTime;
+    DHMS leftTime,_pt;
     String _btn_down_text;
-    uint16_t x;
-
 
     if( _nextion.currentPage()==0){
             
         if(_curRoasterStates->State == ROASTER_STATE_STARTED){
 
-
-
             //Chart-------------------------------------
             if(_chart.fieldIsOver()){
                 stopRoast();  
             }
-            if(_curRoasterStates->Time - _lastChartTim >= GRAPH_FREQUENCY){
+            if(_curRoasterStates->Time - _lastChartTime >= GRAPH_FREQUENCY){
 
                 _chart.clearRight();
                 _chart.lineG(2,RL_TEMPS[_profile.RL-1]);
-                _chart.addChanelValue(0,_curRoasterStates->BT);            
-                _chart.chanelForecast(0);
-                _chart.addChanelValue(1,_curRoasterStates->RoR);
-                //_chart.lineV(5,_chartFCIndex);
-                //_chart.lineV(6,_chartFCIndex);
+
+//Serial.print("_msTime=");Serial.println(_msTime);
+
+                _chart.addChanelValue(0, _curRoasterStates->Time, _curRoasterStates->BT);            
+                _chart.chanelForecast(0, CHART_BT_FCAST_COLOR);
+                _chart.addChanelValue(1, _curRoasterStates->Time, _curRoasterStates->RoR);
+
+                _pt = getDHMS(_curRoasterStates->PDT);    
+                sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
+
+                _chart.lineV(5,_curRoasterStates->PDT, _buf);         // Planned Finish 
+    //Serial.print("_buf = ");Serial.println(_buf);
+                _pt = getDHMS(_curRoasterStates->PFC);    
+                sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
+
+                _chart.lineV(6,_curRoasterStates->PFC, _buf);         // Planned FC
 
                     
 
-                _lastChartTim = _curRoasterStates->Time;
-                _chartIndex++;
+                _lastChartTime = _curRoasterStates->Time;
 
                 if(_curRoasterStates->FC > 0){
-                    x = _curRoasterStates->StopTime / (_curRoasterStates->FC / _chartFCIndex);
-                    _chart.lineV(3,_chartFCIndex);
-                    _chart.lineV(4, x);
+
+
+                    _chart.lineV(3,_curRoasterStates->FC,"FC");
+                    _chart.lineV(4,_curRoasterStates->StopTime,"Finish");
 
                 }
             }
@@ -165,7 +188,7 @@ void Dispatcher::refreshStates(){
 
             if(_curRoasterStates->FC > 0){
                 if(_curRoasterStates->StopFlag){
-                    sprintf(_buf, "page0.b_st.pco2=%s", _chartIndex & 1 ? "RED" : "61277");
+                    sprintf(_buf, "page0.b_st.pco2=%s", _refreshCounter & 1 ? "RED" : "61277");
                     _nextion.sendCommand(_buf);                
                 }
 
@@ -193,7 +216,7 @@ void Dispatcher::refreshStates(){
         _nextion.sendCommand(_buf);         
 
     }
-
+    _refreshCounter++;
      
 };
 
@@ -232,7 +255,10 @@ void Dispatcher::listEvents(){
             case RT_COMMAND:
                 //Serial.print("RL="); Serial.println(input[1]);
                 changeRoastTime(input[1]);
-             
+                break;                                
+            case TR_COMMAND:
+                //Serial.print("RL="); Serial.println(input[1]);
+                changeDTR(input[1]);
                 break;                                
             default:
                 break;

@@ -14,6 +14,9 @@ bool Roaster::start(RoastProfile profile){
     _timerStart = millis();
     _timerStop = 0;
     _timerRoR = 0;
+    _plannedStop = _profile.PDT * 60000;                        //Duration (0 -> Stop) Min -> Ms 
+    _plannedFC = _plannedStop * 0.01 * (100 - _profile.DTR);    //Duration (0 -> FC) in Ms
+
     //initRoRTimer();
     _curSates.FC = 0;
     _curSates.LeftTime = 0;
@@ -28,6 +31,9 @@ bool Roaster::stop(){
     //readStates();
     _curSates.State = ROASTER_STATE_STOPPED;
     return true;    
+};
+bool Roaster::isStarted(){
+    return _curSates.State;    
 };
 uint8_t Roaster::getCoffeBeanTemperature(){
     return uint8_t(_thermo_z_cb.readCelsius());
@@ -55,10 +61,10 @@ RoasterStates *Roaster::readStates(){
         _curSates.LastRoRBT = _curSates.BT;
         initRoRTimer();
     }
+    _curSates.PDT = _plannedStop;
+    _curSates.PFC = _plannedFC;
     
-    
-
-    
+ 
     return &_curSates;
 };
 void Roaster::FC(uint8_t DevelopmentTimeRatio){

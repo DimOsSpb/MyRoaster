@@ -10,7 +10,8 @@
 #define CHART_DY 120 
 
 #define CHART_X_MIN 0
-#define CHART_X_MAX_RATIO 1000*60   // 1 min in millis
+#define CHART_X_MAX_RATIO 60000     // 1 min in millis
+#define CHART_X_ADD_PROCENT 10      // Additional procent of time
 
 #define CHART_BT_CRECK 220
 
@@ -19,11 +20,12 @@
 
 #define CHART_ROR_COLOR 65535u
 #define CHART_BT_COLOR 13663u
-#define CHART_FC_COLOR 64267u
+#define CHART_BT_FCAST_COLOR 9239u
+#define CHART_FC_COLOR 65161u
 #define CHART_MAX_BT_COLOR 63488u
 #define CHART_BT220_COLOR 31281u
-#define CHART_PDT_COLOR 63488u
-#define CHART_PFC_COLOR 4127u
+#define CHART_PDT_COLOR 47104u
+#define CHART_PFC_COLOR 45608u
 
 
 #define BTN_ST_ON_COMMAND 10
@@ -34,6 +36,7 @@
 #define BTN_SC_OFF_COMMAND 31
 #define RL_COMMAND 100
 #define RT_COMMAND 101
+#define TR_COMMAND 102
 #define ON_PAGE_COMMAND 200
 
 #define BTN_ST_ON_DOWN_TEXT "\r\n Start" 
@@ -45,8 +48,10 @@
 
 #define DEFAULT_ROR_FREQ 15     //in secs
 #define DEFAULT_DTR 22          //Development Time Ratio (DTR) 15-25% (20-25% rec. https://www.scottrao.com/blog/2016/8/25/development-time-ratio )
+#define MAX_DTR 26
 #define DEFAULT_RL 7            //Default Roast Level
 #define DEFAULT_PDT 12          //Planned Development Time
+#define MAX_PDT 20
 
 struct RoastLevels
 {
@@ -70,19 +75,21 @@ class Dispatcher{
         void stopSecondCrack();
         void changeRoastLevel(uint8_t level,bool _reflect);
         void changeRoastTime(uint8_t value,bool _reflect);
+        void changeDTR(uint8_t value,bool _reflect);
     private:
         Nextion _nextion;
         Roaster _roaster;
         Chart _chart;
 
-        uint16_t _chartIndex,_chartFCIndex;
         uint16_t _chartLastBT,_chartLastRoR;
-        uint32_t _lastChartTim;
+        uint32_t _lastChartTime;
+        uint8_t _refreshCounter;
 
         RoastProfile _profile;
         char _buf[100];
         void _reflectChanges_RL();
         void _reflectChanges_PDT();
+        void _reflectChanges_DTR();
         void _onNextionPage(uint8_t page);
         void _initChart();
 
