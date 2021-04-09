@@ -29,6 +29,21 @@ struct Channel{
     float pointsInDivisionX; 
 };
 
+struct ChartLabelStyle {
+    bool            Flag             : 1;            // display text flag in current x,y position of chanel (if FlagVAlignment!=3)
+    unsigned     FlagGAlignment      : 2;            // 0 - left, 1 - right, 2 - center
+    unsigned     FlagVAlignment      : 2;            // 0 - up, 1 - down, 2 - center, 3 - center of Y
+    bool            Label            : 1;            // display label in x position of chanel
+    unsigned     LabelGAlignment     : 2;            // 0 - left, 1 - right, 2 - center
+    unsigned     LabelVAlignment     : 2;            // 0 - up, 1 - down, 2 - center, 3 - center of Y
+};
+
+#define CHART_LSTYLE_DEFAULT    {false,1u,3u,true,2u,1u}
+#define CHART_LSTYLE_PFC        {true,0u,3u,true,0u,1u}
+#define CHART_LSTYLE_FC         {true,0u,0u,true,0u,0u}
+#define CHART_LSTYLE_FINISH     {true,1u,3u,true,1u,0u}
+#define CHART_LSTYLE_PFINISH     {true,1u,3u,true,1u,1u}
+
 class Chart{
     
     public:
@@ -37,10 +52,10 @@ class Chart{
         void initChanel(uint8_t ch_idx,int32_t minValueX,int32_t maxValueX,int32_t minValueY,int32_t maxValueY,uint16_t color,uint8_t depth = 1);
         void clearRight();
         void addChanelValue(uint8_t ch_idx,int32_t valueX,int32_t valueY);
-        void lineG(uint8_t ch_idx,int32_t valueY);                      // Horizontal line by value
-        void lineV(uint8_t ch_idx,int32_t valueX, String txt = "");     // Vertical line by value
-        void lineX(uint8_t ch_idx,int32_t pointX);                      // Vertical line by value in pixels
-        void lineX(uint8_t ch_idx);                                     // Vertical line in last position on X
+        void lineG(uint8_t ch_idx,int32_t valueY);                                                                          // Horizontal line by value
+        void lineV(uint8_t ch_idx,int32_t valueX, char *label, char *flag, ChartLabelStyle labelStyle = CHART_LSTYLE_DEFAULT, uint8_t flag_ch_idx = 0);   // Vertical line by value
+        void lineX(uint8_t ch_idx,int32_t pointX);                                                                          // Vertical line by value in pixels
+        void lineX(uint8_t ch_idx);                                                                                         // Vertical line in last position on X
         void fill(uint8_t ch_idx,int32_t value,bool before = false);
         void chanelForecast(uint8_t ch_idx, uint16_t color);
         bool fieldIsOver();
@@ -52,6 +67,8 @@ class Chart{
         float _deltaXY;
         uint16_t _chartCurrentX;
 
+
+        const void _printChartText(char *text, uint8_t GAlign, uint8_t VAlign, int32_t x, int32_t y, uint8_t font, uint16_t tcolor, uint16_t bcolor);
         void keepChartLastValue(uint8_t ch_idx, int32_t _value, int32_t _filteredValue);
         const int32_t getX(uint8_t ch_idx, int32_t _value);
         const int32_t getY(uint8_t ch_idx, int32_t _value);

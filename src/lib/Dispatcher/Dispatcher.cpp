@@ -25,6 +25,9 @@ const RoastLevels _RL[10] ={
     {3,"Italian"}
 };
 
+
+
+
 Dispatcher::Dispatcher(): _nextion(NEXTIAN_RX, NEXTIAN_TX), _chart(&_nextion,0,25,CHART_DX,CHART_DY+25){};
 
 void Dispatcher::init(){
@@ -38,6 +41,12 @@ void Dispatcher::init(){
     changeRoastLevel(DEFAULT_RL,false);
     changeRoastTime(DEFAULT_PDT,false);
     changeDTR(DEFAULT_DTR,false);
+
+    sprintf(_buf, "page0.b_fc.pco=%u",CHART_FC_COLOR);
+    _nextion.sendCommand(_buf);
+//Serial.println(_buf); 
+    sprintf(_buf, "page0.b_fc.pco2=%u",CHART_FC_COLOR);
+    _nextion.sendCommand(_buf); 
 
     _initChart();
     refreshStates();
@@ -65,7 +74,7 @@ void Dispatcher::startRoast(){
 }
 void Dispatcher::stopRoast(){
     if(_roaster.isStarted()){
-        sprintf(_buf, "page0.b_st.bco2=61277");
+        sprintf(_buf, "page0.b_st.pco2=61277");
         _nextion.sendCommand(_buf);    
         sprintf(_buf, "page0.b_st.val=0");
         _nextion.sendCommand(_buf);    
@@ -138,6 +147,11 @@ void Dispatcher::refreshStates(){
     DHMS timeFC = getDHMS(_curRoasterStates->FC);
     DHMS leftTime,_pt;
     String _btn_down_text;
+    char PFC_Flag[] = "PFC";    
+    char PDT_Flag[] = "PStop";    
+    char FC_Flag[] = "FC";    
+    char FIN_Flag[] = "Finish";
+
 
     if( _nextion.currentPage()==0){
             
@@ -152,7 +166,7 @@ void Dispatcher::refreshStates(){
                 _chart.clearRight();
                 _chart.lineG(2,RL_TEMPS[_profile.RL-1]);
 
-//Serial.print("_msTime=");Serial.println(_msTime);
+
 
                 _chart.addChanelValue(0, _curRoasterStates->Time, _curRoasterStates->BT);            
                 _chart.chanelForecast(0, CHART_BT_FCAST_COLOR);
@@ -161,12 +175,12 @@ void Dispatcher::refreshStates(){
                 _pt = getDHMS(_curRoasterStates->PDT);    
                 sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
 
-                _chart.lineV(5,_curRoasterStates->PDT, _buf);         // Planned Finish 
-    //Serial.print("_buf = ");Serial.println(_buf);
+                _chart.lineV(5,_curRoasterStates->PDT, _buf, PDT_Flag, CHART_LSTYLE_PFINISH);         // Planned Finish 
+
                 _pt = getDHMS(_curRoasterStates->PFC);    
                 sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
 
-                _chart.lineV(6,_curRoasterStates->PFC, _buf);         // Planned FC
+                _chart.lineV(6,_curRoasterStates->PFC, _buf, PFC_Flag, CHART_LSTYLE_PFC);         // Planned FC
 
                     
 
@@ -175,8 +189,11 @@ void Dispatcher::refreshStates(){
                 if(_curRoasterStates->FC > 0){
 
 
-                    _chart.lineV(3,_curRoasterStates->FC,"FC");
-                    _chart.lineV(4,_curRoasterStates->StopTime,"Finish");
+                    sprintf(_buf, "%02u:%02u", timeFC.Mins,timeFC.Secs);
+                    _chart.lineV(3,_curRoasterStates->FC, _buf, FC_Flag, CHART_LSTYLE_FC, 0);
+                    _pt = getDHMS(_curRoasterStates->StopTime);
+                    sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
+                    _chart.lineV(4,_curRoasterStates->StopTime, _buf, FIN_Flag, CHART_LSTYLE_FINISH);
 
                 }
             }
