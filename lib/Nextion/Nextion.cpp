@@ -90,8 +90,8 @@ void Nextion::fill(uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy,uint16_t co
 
 void Nextion::text(char *txt, uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy, uint8_t fontN, uint16_t tcolor, uint16_t bcolor, uint8_t bcflag){
 
-  sprintf(_buf, "xstr %u,%u,%u,%u,%u,%u,%u,1,0,%u,\"%s\"",ltx,lty,dx,dy,fontN,tcolor,bcolor,bcflag,txt);
-// Serial.println(_buf);
+  sprintf(_buf, "xstr %u,%u,%u,%u,%u,%u,%u,1,1,%u,\"%s\"",ltx,lty,dx,dy,fontN,tcolor,bcolor,bcflag,txt);
+//Serial.println(_buf);
   sendCommand(_buf);
 };
 

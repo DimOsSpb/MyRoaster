@@ -72,6 +72,7 @@ void Roaster::FC(uint8_t DevelopmentTimeRatio){
     if(_curSates.State == ROASTER_STATE_STARTED) {
         _curMillis = millis();
         _curSates.FC =  _curMillis - _timerStart;
+        _curSates.FCT = getCoffeBeanTemperature();
         _timerStop = _curMillis + (_curSates.FC / (100-DevelopmentTimeRatio)) * DevelopmentTimeRatio;
         _curSates.StopTime = _timerStop - _timerStart;
         _curSates.StopFlag = false;

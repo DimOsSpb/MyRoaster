@@ -28,7 +28,7 @@ const RoastLevels _RL[10] ={
 
 
 
-Dispatcher::Dispatcher(): _nextion(NEXTIAN_RX, NEXTIAN_TX), _chart(&_nextion,0,25,CHART_DX,CHART_DY+25){};
+Dispatcher::Dispatcher(): _nextion(NEXTIAN_RX, NEXTIAN_TX), _chart(&_nextion,CHART_X,CHART_Y,CHART_DX,CHART_DY+CHART_Y){};
 
 void Dispatcher::init(){
     _profile.RoRFreq = DEFAULT_ROR_FREQ;
@@ -57,9 +57,9 @@ void Dispatcher::_initChart(){
     uint32_t pdt_plus = (_profile.PDT+_profile.PDT*0.01*CHART_X_ADD_PROCENT) * CHART_X_MAX_RATIO;
 
     _chart.init();
-    _chart.initChanel(0,0,pdt_plus,50,CHART_BT_MAX,CHART_BT_COLOR,2);
-    _chart.initChanel(1,0,pdt_plus,0,CHART_ROR_MAX,CHART_ROR_COLOR,2);
-    _chart.initChanel(2,0,pdt_plus,0,CHART_BT_MAX,CHART_MAX_BT_COLOR,2);
+    _chart.initChanel(0,0,pdt_plus,CHART_BT_MIN,CHART_BT_MAX,CHART_BT_COLOR,2);
+    _chart.initChanel(1,0,pdt_plus,CHART_ROR_MIN,CHART_ROR_MAX,CHART_ROR_COLOR,2);
+    _chart.initChanel(2,0,pdt_plus,CHART_BT_MIN,CHART_BT_MAX,CHART_MAX_BT_COLOR,2);
     _chart.initChanel(3,0,pdt_plus,0,CHART_DX,CHART_FC_COLOR,1);
     _chart.initChanel(4,0,pdt_plus,0,CHART_DX,CHART_MAX_BT_COLOR,1);
     _chart.initChanel(5,0,pdt_plus,0,CHART_DX,CHART_PDT_COLOR,3);
@@ -175,12 +175,12 @@ void Dispatcher::refreshStates(){
                 _pt = getDHMS(_curRoasterStates->PDT);    
                 sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
 
-                _chart.lineV(5,_curRoasterStates->PDT, _buf, PDT_Flag, CHART_LSTYLE_PFINISH);         // Planned Finish 
+                _chart.lineV(5,_curRoasterStates->PDT, _buf, PDT_Flag, CHART_VLSTYLE_PFINISH);         // Planned Finish 
 
                 _pt = getDHMS(_curRoasterStates->PFC);    
                 sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
 
-                _chart.lineV(6,_curRoasterStates->PFC, _buf, PFC_Flag, CHART_LSTYLE_PFC);         // Planned FC
+                _chart.lineV(6,_curRoasterStates->PFC, _buf, PFC_Flag, CHART_VLSTYLE_PFC);         // Planned FC
 
                     
 
@@ -190,10 +190,12 @@ void Dispatcher::refreshStates(){
 
 
                     sprintf(_buf, "%02u:%02u", timeFC.Mins,timeFC.Secs);
-                    _chart.lineV(3,_curRoasterStates->FC, _buf, FC_Flag, CHART_LSTYLE_FC, 0);
+                    //_chart.lineV(3,_curRoasterStates->FC, _buf, FC_Flag, CHART_VLSTYLE_FC);
+                    _chart.label(3,_curRoasterStates->FC, _curRoasterStates->FCT, FC_Flag, CHART_LSTYLE_FC);
+       
                     _pt = getDHMS(_curRoasterStates->StopTime);
                     sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
-                    _chart.lineV(4,_curRoasterStates->StopTime, _buf, FIN_Flag, CHART_LSTYLE_FINISH);
+                    _chart.lineV(4,_curRoasterStates->StopTime, _buf, FIN_Flag, CHART_VLSTYLE_FINISH);
 
                 }
             }

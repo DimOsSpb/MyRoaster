@@ -15,7 +15,7 @@ Chart::Chart(Nextion *nextion,uint16_t ltx,uint16_t lty, uint16_t rbx,uint16_t r
 void Chart::init(){
     _chartCurrentX = 0;  
 }
-void Chart::initChanel(uint8_t ch_idx,int32_t minValueX,int32_t maxValueX,int32_t minValueY,int32_t maxValueY,uint16_t color,uint8_t depth){
+void Chart::initChanel(uint8_t ch_idx,int32_t minValueX,int32_t maxValueX,int32_t minValueY,int32_t maxValueY,uint32_t color,uint8_t depth){
     if(ch_idx >= 0 && ch_idx < CHART_CHANELS){
         _channels[ch_idx].counter = 0;
         _channels[ch_idx].lastX = 0;
@@ -28,11 +28,15 @@ void Chart::initChanel(uint8_t ch_idx,int32_t minValueX,int32_t maxValueX,int32_
         _channels[ch_idx].lastValues[0] = 0;
         _channels[ch_idx].lastValues[1] = 0;
         _channels[ch_idx].lastValues[2] = 0;
+// Serial.print("_rightBottom.y-_leftTop.y=");Serial.println(_rightBottom.y-_leftTop.y);         
+// Serial.print("maxValueY="); Serial.println(maxValueY);
+// Serial.print("minValueY="); Serial.println(minValueY);
         if(maxValueY > minValueY)
             _channels[ch_idx].pointsInDivisionY = float(_rightBottom.y-_leftTop.y)/(maxValueY-minValueY);
         if(maxValueX > minValueX)
             _channels[ch_idx].pointsInDivisionX = float(_rightBottom.x-_leftTop.x)/(maxValueX-minValueX);
         
+//Serial.print("pointsInDivisionY="); Serial.println(_channels[ch_idx].pointsInDivisionY);
     }
 };
 
@@ -63,9 +67,7 @@ const int32_t Chart::getY(uint8_t ch_idx,int32_t _value){
         val_y = _rightBottom.y - (_value - _channels[ch_idx].minValueY)*_channels[ch_idx].pointsInDivisionY;
         if(val_y > _rightBottom.y) return _rightBottom.y; 
         if(val_y < _leftTop.y) {
-// Serial.print("val_Y"); Serial.println(val_y);            
-// Serial.print("_leftTop.y"); Serial.println(_leftTop.y);            
-            //
+
         return _leftTop.y; 
         }
     }
@@ -202,15 +204,43 @@ void Chart::chanelForecast(uint8_t ch_idx, uint16_t color){
     }
 };
 
+
 void Chart::lineG(uint8_t ch_idx,int32_t valueY){
     uint16_t y;
     if(_channels[ch_idx].depth>0){ 
-        y = getY(ch_idx, valueY);   
+        y = getY(ch_idx, valueY);  
+// Serial.print("lineG_Y=");Serial.println(y);         
+// Serial.print("pointsInDivisionY"); Serial.println(_channels[ch_idx].pointsInDivisionY);
         _nextion->line(_leftTop.x, y, _rightBottom.x, y, _channels[ch_idx].color );
     }
 };
 
-void Chart::lineV(uint8_t ch_idx,int32_t valueX, char *label, char *flag, ChartLabelStyle labelStyle, uint8_t flag_ch_idx){
+void Chart::label(uint8_t ch_idx,int32_t valueX, int32_t valueY, char *label, ChartLabelStyle labelStyle){
+
+    int32_t x,y;
+
+    if(_channels[ch_idx].depth>0){
+
+        x = getX(ch_idx, valueX);
+        y = getY(ch_idx, valueY);
+
+        _printChartText(label, labelStyle.GAlignment, labelStyle.VAlignment, x, y , 2, 65535, _channels[ch_idx].color);
+        //     _nextion->line(x, _leftTop.y, x, _rightBottom.y, _channels[ch_idx].color );
+
+        // if(labelStyle.Label)
+        //     _printChartText(label, labelStyle.LabelGAlignment, labelStyle.LabelVAlignment, tx, _rightBottom.y, 2, 65535, 3);
+
+        // if(labelStyle.Flag)
+        // {
+
+        //     _printChartText(flag, labelStyle.FlagGAlignment, labelStyle.FlagVAlignment, tx, getY(flag_ch_idx,_channels[flag_ch_idx].lastValue) , 2, 65535, _channels[ch_idx].color);
+        // }
+    
+    }
+};
+
+
+void Chart::lineV(uint8_t ch_idx,int32_t valueX, char *label, char *flag, ChartVLabelStyle labelStyle, uint8_t flag_ch_idx){
 
     int32_t x,tx;
 
@@ -239,8 +269,8 @@ void Chart::lineV(uint8_t ch_idx,int32_t valueX, char *label, char *flag, ChartL
 };
 
 #define _LABEL_HEIGHT 14 
-#define _PIXELS_IN_CHAR 7
-const void Chart::_printChartText(char *text, uint8_t GAlign, uint8_t VAlign, int32_t x, int32_t y, uint8_t font, uint16_t tcolor, uint16_t bcolor){
+#define _PIXELS_IN_CHAR 10
+const void Chart::_printChartText(char *text, uint8_t GAlign, uint8_t VAlign, int32_t x, int32_t y, uint8_t font, uint16_t tcolor, int32_t bcolor){
     uint8_t tpl, bgflag = 3;
     tpl = strlen(text) * _PIXELS_IN_CHAR;   // 7 pixels in char (approximately)
     if(tpl>0)
@@ -273,9 +303,10 @@ const void Chart::_printChartText(char *text, uint8_t GAlign, uint8_t VAlign, in
             break;
         case 3:
             y = _rightBottom.y - ((_rightBottom.y - _leftTop.y) * 0.5);
-            bgflag = 1; //solid color
             break;
         }
+
+         bgflag = bcolor < 0 ? 3 : 1; //solid color
 
         _nextion->text(&text[0], x, y, tpl, 14, 2, tcolor , bcolor, bgflag);     
     }

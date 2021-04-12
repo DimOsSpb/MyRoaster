@@ -6,6 +6,9 @@
 #define NEXTIAN_RX 9
 #define NEXTIAN_TX 10
 #define GRAPH_FREQUENCY 2500    //in MS - 2,5secs
+
+#define CHART_X 0
+#define CHART_Y 25
 #define CHART_DX 320 
 #define CHART_DY 120 
 
@@ -15,8 +18,10 @@
 
 #define CHART_BT_CRECK 220
 
+#define CHART_BT_MIN 50
 #define CHART_BT_MAX 260
-#define CHART_ROR_MAX 35
+#define CHART_ROR_MIN 0
+#define CHART_ROR_MAX 25
 
 #define CHART_ROR_COLOR 65535u
 #define CHART_BT_COLOR 13663u
