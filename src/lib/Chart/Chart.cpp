@@ -9,20 +9,22 @@ Chart::Chart(Nextion *nextion,uint16_t ltx,uint16_t lty, uint16_t rbx,uint16_t r
         _rightBottom.y = rby;
         _deltaXY = float(rbx-ltx)/(rby-lty);
     }
-    init();
 };
 
-void Chart::init(){
-    _chartCurrentX = 0;  
+void Chart::init(int32_t minValueX,int32_t maxValueX){
+    _chartCurrentX = 0; 
+    _minValueX = minValueX;
+    _maxValueX = maxValueX;     
+    if(_maxValueX > _minValueX)
+        _pointsInDivisionX = float(_rightBottom.x-_leftTop.x)/(maxValueX-minValueX);
 }
-void Chart::initChanel(uint8_t ch_idx,int32_t minValueX,int32_t maxValueX,int32_t minValueY,int32_t maxValueY,uint32_t color,uint8_t depth){
+void Chart::initChanel(uint8_t ch_idx,int32_t minValueY,int32_t maxValueY,uint32_t color,uint8_t depth){
     if(ch_idx >= 0 && ch_idx < CHART_CHANELS){
         _channels[ch_idx].counter = 0;
         _channels[ch_idx].lastX = 0;
         _channels[ch_idx].minValueY = minValueY;
         _channels[ch_idx].maxValueY = maxValueY;
-        _channels[ch_idx].minValueX = minValueX;
-        _channels[ch_idx].maxValueX = maxValueX;
+
         _channels[ch_idx].color = color;
         _channels[ch_idx].depth = depth;
         _channels[ch_idx].lastValues[0] = 0;
@@ -33,8 +35,6 @@ void Chart::initChanel(uint8_t ch_idx,int32_t minValueX,int32_t maxValueX,int32_
 // Serial.print("minValueY="); Serial.println(minValueY);
         if(maxValueY > minValueY)
             _channels[ch_idx].pointsInDivisionY = float(_rightBottom.y-_leftTop.y)/(maxValueY-minValueY);
-        if(maxValueX > minValueX)
-            _channels[ch_idx].pointsInDivisionX = float(_rightBottom.x-_leftTop.x)/(maxValueX-minValueX);
         
 //Serial.print("pointsInDivisionY="); Serial.println(_channels[ch_idx].pointsInDivisionY);
     }
@@ -46,13 +46,13 @@ void Chart::keepChartLastValue(uint8_t ch_idx, int32_t _value, int32_t _filtered
     _channels[ch_idx].lastValues[CHARRT_STAT_VALUES-1] = _filteredValue;
     _channels[ch_idx].lastValue = _value;
 };
-const int32_t Chart::getX(uint8_t ch_idx,int32_t _value){
+const int32_t Chart::getX(int32_t _value){
     int32_t _val;
-    if(_value<=_channels[ch_idx].minValueX) return _leftTop.x;
-    if(_value>_channels[ch_idx].maxValueX) return _rightBottom.x;
+    if(_value<=_minValueX) return _leftTop.x;
+    if(_value>_maxValueX) return _rightBottom.x;
     else 
     {
-        _val =  _leftTop.x + (_value - _channels[ch_idx].minValueX)*_channels[ch_idx].pointsInDivisionX;
+        _val =  _leftTop.x + (_value - _minValueX)*_pointsInDivisionX;
         if(_val > _rightBottom.x) return _rightBottom.x; 
     }
     return _val;
@@ -99,10 +99,7 @@ void Chart::clearRight(){
 void Chart::addChanelValue(uint8_t ch_idx,int32_t valueX,int32_t _valueY){
     uint16_t val_x1,val_x2,val_y1,val_y2;
     int32_t last_val,filtered_val;
-    // Serial.print("BT=220 - ");Serial.println(getY(0, 220));
-    // Serial.print("BT=200 - ");Serial.println(getY(0, 200));
-    // Serial.print("BT=196 - ");Serial.println(getY(0, 196));
-    // Serial.println("---");
+
 
     if(ch_idx >= 0  && ch_idx < CHART_CHANELS && _channels[ch_idx].depth>0){
         if(_channels[ch_idx].counter) {
@@ -117,7 +114,7 @@ void Chart::addChanelValue(uint8_t ch_idx,int32_t valueX,int32_t _valueY){
         }
 
 
-        val_x2 = getX(ch_idx, valueX);
+        val_x2 = getX(valueX);
         val_y2 = getY(ch_idx, filtered_val);
         if(_channels[ch_idx].counter){
             val_x1 = _channels[ch_idx].lastX;
@@ -215,124 +212,132 @@ void Chart::lineG(uint8_t ch_idx,int32_t valueY){
     }
 };
 
-void Chart::label(uint8_t ch_idx,int32_t valueX, int32_t valueY, char *label, ChartLabelStyle labelStyle){
-
-    int32_t x,y;
-
-    if(_channels[ch_idx].depth>0){
-
-        x = getX(ch_idx, valueX);
-        y = getY(ch_idx, valueY);
-
-        _printChartText(label, labelStyle.GAlignment, labelStyle.VAlignment, x, y , 2, 65535, _channels[ch_idx].color);
-        //     _nextion->line(x, _leftTop.y, x, _rightBottom.y, _channels[ch_idx].color );
-
-        // if(labelStyle.Label)
-        //     _printChartText(label, labelStyle.LabelGAlignment, labelStyle.LabelVAlignment, tx, _rightBottom.y, 2, 65535, 3);
-
-        // if(labelStyle.Flag)
-        // {
-
-        //     _printChartText(flag, labelStyle.FlagGAlignment, labelStyle.FlagVAlignment, tx, getY(flag_ch_idx,_channels[flag_ch_idx].lastValue) , 2, 65535, _channels[ch_idx].color);
-        // }
-    
-    }
-};
 
 
-void Chart::lineV(uint8_t ch_idx,int32_t valueX, char *label, char *flag, ChartVLabelStyle labelStyle, uint8_t flag_ch_idx){
+void Chart::lineV(int32_t valueX, ChartLineStyle style, uint16_t fcolor, int32_t bcolor,char *label){
 
-    int32_t x,tx;
+    int32_t x;
 
-    if(_channels[ch_idx].depth>0 && valueX <= _channels[ch_idx].maxValueX && valueX >= _channels[ch_idx].minValueX){
+    x = getX(valueX);
+    _nextion->line(x, _leftTop.y, x, _rightBottom.y, fcolor );
 
-        tx = valueX * _channels[ch_idx].pointsInDivisionX;
-        x = tx - (_channels[ch_idx].depth * 0.5);
-        if(x < _leftTop.x) x = _leftTop.x;
-        for (uint8_t i = 0; i < _channels[ch_idx].depth; i++)
-        {
-            _nextion->line(x, _leftTop.y, x, _rightBottom.y, _channels[ch_idx].color );
-            if(x < _rightBottom.x) x++ ;
-            else x = _rightBottom.x;
-        }
+    if(style.Label)
+ //Serial.print("label=");Serial.println(label);         
+        _printChartText(label, style.LabelStyle, x, _rightBottom.y, 2, fcolor, bcolor);
 
-        if(labelStyle.Label)
-            _printChartText(label, labelStyle.LabelGAlignment, labelStyle.LabelVAlignment, tx, _rightBottom.y, 2, 65535, 3);
 
-        if(labelStyle.Flag)
-        {
-
-            _printChartText(flag, labelStyle.FlagGAlignment, labelStyle.FlagVAlignment, tx, getY(flag_ch_idx,_channels[flag_ch_idx].lastValue) , 2, 65535, _channels[ch_idx].color);
-        }
-    
-    }
 };
 
 #define _LABEL_HEIGHT 14 
 #define _PIXELS_IN_CHAR 10
-const void Chart::_printChartText(char *text, uint8_t GAlign, uint8_t VAlign, int32_t x, int32_t y, uint8_t font, uint16_t tcolor, int32_t bcolor){
-    uint8_t tpl, bgflag = 3;
-    tpl = strlen(text) * _PIXELS_IN_CHAR;   // 7 pixels in char (approximately)
+const void Chart::_printChartText(char *text, ChartLabelStyle aligment, int32_t x, int32_t y, uint8_t font, uint16_t fcolor, int32_t bcolor){
+    uint8_t sl,tpl;
+    sl = strlen(text);
+    tpl = (sl * _PIXELS_IN_CHAR) - sl*3;   // 7 pixels in char (approximately)
     if(tpl>0)
     {
-        switch(GAlign)
-        {
+        switch(aligment.LabelAligment.Horisontal)        {
         case 0:
             x = x - tpl;
             break;
-        case 2:
+        case 1:
             x = x - tpl * 0.5;
             break;
-        case 1:
+        case 2:
             break;
         }
         if(x < _leftTop.x) x = _leftTop.x;
         if(x > _rightBottom.x - tpl) x = _rightBottom.x - tpl;
         
         
-        switch(VAlign)
+        switch(aligment.LabelAligment.Vertical)
         {
         case 0:
             y = y - _LABEL_HEIGHT;
             break;
         case 1:
-            y = y-1;
-            break;            
-        case 2:
             y = y - _LABEL_HEIGHT * 0.5;
             break;
-        case 3:
-            y = _rightBottom.y - ((_rightBottom.y - _leftTop.y) * 0.5);
-            break;
+        case 2:
+            y = y-1;
+            break;            
         }
 
-         bgflag = bcolor < 0 ? 3 : 1; //solid color
+        
 
-        _nextion->text(&text[0], x, y, tpl, 14, 2, tcolor , bcolor, bgflag);     
+        _nextion->text(&text[0], x, y, tpl, 14, 2, fcolor , bcolor, aligment.BackgroundFill);     
     }
 };
 
-void Chart::lineX(uint8_t ch_idx,int32_t positionX){
-    if(_channels[ch_idx].depth>0 && positionX <= _rightBottom.x && positionX >= _leftTop.x)
-        _nextion->line(positionX, _leftTop.y, positionX, _rightBottom.y, _channels[ch_idx].color );
-    
-};
+void Chart::label(uint8_t ch_idx,int32_t valueX, int32_t valueY, char *label, ChartLabelStyle labelStyle, uint16_t fcolor, int32_t bcolor){
 
-void Chart::lineX(uint8_t ch_idx){
-    if(_channels[ch_idx].depth>0)
-        _nextion->line(_channels[ch_idx].lastX, _leftTop.y, _channels[ch_idx].lastX, _rightBottom.y, _channels[ch_idx].color );
-    
-};
+    int32_t x,y, fp_ltx,fp_lty,fp_rbx,fp_rby;
 
-void Chart::fill(uint8_t ch_idx,int32_t value,bool before){
-    uint16_t y;
-    if(_channels[ch_idx].depth>0){ 
-        y = getY(ch_idx, value);
-        if(before)   
-            _nextion->fill(_leftTop.x, y, _rightBottom.x-_leftTop.x,_rightBottom.y-y, _channels[ch_idx].color);
-        else
-            _nextion->fill(_leftTop.x, _leftTop.y, _rightBottom.x-_leftTop.x,y-_leftTop.y, _channels[ch_idx].color);
-    }    
+
+    if(_channels[ch_idx].depth>0){
+
+        x = getX(valueX);
+        y = getY(ch_idx, valueY);
+//  Serial.print("x=");Serial.println(x);         
+//  Serial.print("y="); Serial.println(y);
+
+        if(labelStyle.FlagpoleLenght > 0)
+        {
+            switch(labelStyle.FlagAligment.Horisontal)
+            {
+            case 0: //left
+                fp_ltx = x - labelStyle.FlagpoleLenght;
+                fp_rbx = x;
+                x = fp_ltx;
+                break;
+            case 1: //center
+                fp_ltx = x;
+                fp_rbx = x;
+                break;
+            case 2: //right
+                fp_ltx = x;
+                fp_rbx = x + labelStyle.FlagpoleLenght;
+                x = fp_rbx;
+                break;
+            }
+            switch(labelStyle.FlagAligment.Vertical)
+            {
+            case 0:
+                if(labelStyle.FlagAligment.Horisontal != 2)
+                {
+                    fp_lty = y - labelStyle.FlagpoleLenght;
+                    fp_rby = y;
+                }
+                else
+                {
+                    fp_lty = y;
+                    fp_rby = y - labelStyle.FlagpoleLenght;
+                }
+                y = y - labelStyle.FlagpoleLenght;
+                break;
+            case 1:
+                fp_lty = y;
+                fp_rby = x;
+                break;
+            case 2:
+                fp_lty = y;
+                fp_lty = y + labelStyle.FlagpoleLenght;
+                y = fp_lty;
+            }
+
+
+            if(fp_ltx < _leftTop.x) fp_ltx = _leftTop.x;
+            if(fp_rbx > _rightBottom.x) fp_rbx = _rightBottom.x;
+            if(fp_lty < _leftTop.y) fp_lty = _leftTop.y;
+            if(fp_rby > _rightBottom.y) fp_rby = _rightBottom.y;
+            
+            _nextion->line(fp_ltx, fp_lty, fp_rbx, fp_rby, fcolor );
+
+        }
+        _printChartText(label, labelStyle, x, y , 2, fcolor, bcolor);
+
+        
+     }
 };
 
 

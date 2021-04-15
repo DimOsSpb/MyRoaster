@@ -56,14 +56,14 @@ void Dispatcher::init(){
 void Dispatcher::_initChart(){
     uint32_t pdt_plus = (_profile.PDT+_profile.PDT*0.01*CHART_X_ADD_PROCENT) * CHART_X_MAX_RATIO;
 
-    _chart.init();
-    _chart.initChanel(0,0,pdt_plus,CHART_BT_MIN,CHART_BT_MAX,CHART_BT_COLOR,2);
-    _chart.initChanel(1,0,pdt_plus,CHART_ROR_MIN,CHART_ROR_MAX,CHART_ROR_COLOR,2);
-    _chart.initChanel(2,0,pdt_plus,CHART_BT_MIN,CHART_BT_MAX,CHART_MAX_BT_COLOR,2);
-    _chart.initChanel(3,0,pdt_plus,0,CHART_DX,CHART_FC_COLOR,1);
-    _chart.initChanel(4,0,pdt_plus,0,CHART_DX,CHART_MAX_BT_COLOR,1);
-    _chart.initChanel(5,0,pdt_plus,0,CHART_DX,CHART_PDT_COLOR,3);
-    _chart.initChanel(6,0,pdt_plus,0,CHART_DX,CHART_PFC_COLOR,1);
+    _chart.init(0,pdt_plus);
+    _chart.initChanel(0,CHART_BT_MIN,CHART_BT_MAX,CHART_BT_COLOR,1);
+    _chart.initChanel(1,CHART_ROR_MIN,CHART_ROR_MAX,CHART_ROR_COLOR,1);
+    _chart.initChanel(2,CHART_BT_MIN,CHART_BT_MAX,CHART_MAX_BT_COLOR,1);
+    _chart.initChanel(3,CHART_DX,CHART_FC_COLOR,1);
+    _chart.initChanel(4,CHART_DX,CHART_MAX_BT_COLOR,1);
+    _chart.initChanel(5,0,CHART_DX,CHART_PDT_COLOR,1);
+    _chart.initChanel(6,0,CHART_DX,CHART_PFC_COLOR,1);
 }
 
 void Dispatcher::startRoast(){
@@ -147,11 +147,6 @@ void Dispatcher::refreshStates(){
     DHMS timeFC = getDHMS(_curRoasterStates->FC);
     DHMS leftTime,_pt;
     String _btn_down_text;
-    char PFC_Flag[] = "PFC";    
-    char PDT_Flag[] = "PStop";    
-    char FC_Flag[] = "FC";    
-    char FIN_Flag[] = "Finish";
-
 
     if( _nextion.currentPage()==0){
             
@@ -175,12 +170,12 @@ void Dispatcher::refreshStates(){
                 _pt = getDHMS(_curRoasterStates->PDT);    
                 sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
 
-                _chart.lineV(5,_curRoasterStates->PDT, _buf, PDT_Flag, CHART_VLSTYLE_PFINISH);         // Planned Finish 
+                _chart.lineV(_curRoasterStates->PDT, CHART_VLSTYLE_PFINISH, CHART_PDT_COLOR, 0, _buf);         // Planned Finish 
 
                 _pt = getDHMS(_curRoasterStates->PFC);    
                 sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
 
-                _chart.lineV(6,_curRoasterStates->PFC, _buf, PFC_Flag, CHART_VLSTYLE_PFC);         // Planned FC
+                _chart.lineV(_curRoasterStates->PFC, CHART_VLSTYLE_PFC, CHART_PFC_COLOR, 0, _buf);         // Planned FC
 
                     
 
@@ -188,14 +183,15 @@ void Dispatcher::refreshStates(){
 
                 if(_curRoasterStates->FC > 0){
 
-
                     sprintf(_buf, "%02u:%02u", timeFC.Mins,timeFC.Secs);
-                    //_chart.lineV(3,_curRoasterStates->FC, _buf, FC_Flag, CHART_VLSTYLE_FC);
-                    _chart.label(3,_curRoasterStates->FC, _curRoasterStates->FCT, FC_Flag, CHART_LSTYLE_FC);
+                    _chart.lineV(_curRoasterStates->FC,  CHART_VLSTYLE_FC, CHART_FC_COLOR, 0, _buf);
+
+                    sprintf(_buf, "FC %u°C", _curRoasterStates->FCT);
+                    _chart.label(0,_curRoasterStates->FC, _curRoasterStates->FCT, _buf, CHART_LSTYLE_FC, CHART_FC_COLOR);
        
                     _pt = getDHMS(_curRoasterStates->StopTime);
                     sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
-                    _chart.lineV(4,_curRoasterStates->StopTime, _buf, FIN_Flag, CHART_VLSTYLE_FINISH);
+                    _chart.lineV(_curRoasterStates->StopTime, CHART_VLSTYLE_FINISH, CHART_FINISH_COLOR, 0, _buf);
 
                 }
             }

@@ -26,11 +26,12 @@
 #define CHART_ROR_COLOR 65535u
 #define CHART_BT_COLOR 13663u
 #define CHART_BT_FCAST_COLOR 9239u
-#define CHART_FC_COLOR 65161u
+#define CHART_FC_COLOR 65504u
+#define CHART_FINISH_COLOR 63519u
 #define CHART_MAX_BT_COLOR 63488u
 #define CHART_BT220_COLOR 31281u
-#define CHART_PDT_COLOR 47104u
-#define CHART_PFC_COLOR 45608u
+#define CHART_PDT_COLOR 38066u
+#define CHART_PFC_COLOR 38066u
 
 
 #define BTN_ST_ON_COMMAND 10
@@ -51,7 +52,7 @@
 #define BTN_SC_ON_DOWN_TEXT "\r\n SCE" 
 #define BTN_SC_OFF_DOWN_TEXT "\r\n SC"
 
-#define DEFAULT_ROR_FREQ 15     //in secs
+#define DEFAULT_ROR_FREQ 5     //in secs
 #define DEFAULT_DTR 22          //Development Time Ratio (DTR) 15-25% (20-25% rec. https://www.scottrao.com/blog/2016/8/25/development-time-ratio )
 #define MAX_DTR 26
 #define DEFAULT_RL 7            //Default Roast Level

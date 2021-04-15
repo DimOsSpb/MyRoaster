@@ -76,7 +76,10 @@ void Roaster::FC(uint8_t DevelopmentTimeRatio){
         _timerStop = _curMillis + (_curSates.FC / (100-DevelopmentTimeRatio)) * DevelopmentTimeRatio;
         _curSates.StopTime = _timerStop - _timerStart;
         _curSates.StopFlag = false;
-        
+ Serial.print("_curSates.FC=");Serial.println(_curSates.FC);         
+ Serial.print("_curSates.FCT"); Serial.println(_curSates.FCT);
+
+
     }
 };
 void Roaster::RL(uint8_t valRL){
