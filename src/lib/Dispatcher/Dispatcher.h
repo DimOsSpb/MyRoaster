@@ -52,7 +52,7 @@
 #define BTN_SC_ON_DOWN_TEXT "\r\n SCE" 
 #define BTN_SC_OFF_DOWN_TEXT "\r\n SC"
 
-#define DEFAULT_ROR_FREQ 5     //in secs
+#define DEFAULT_ROR_FREQ 30     //in secs
 #define DEFAULT_DTR 22          //Development Time Ratio (DTR) 15-25% (20-25% rec. https://www.scottrao.com/blog/2016/8/25/development-time-ratio )
 #define MAX_DTR 26
 #define DEFAULT_RL 7            //Default Roast Level
