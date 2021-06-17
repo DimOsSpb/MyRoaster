@@ -30,13 +30,10 @@ void Chart::initChanel(uint8_t ch_idx,int32_t minValueY,int32_t maxValueY,uint32
         _channels[ch_idx].lastValues[0] = 0;
         _channels[ch_idx].lastValues[1] = 0;
         _channels[ch_idx].lastValues[2] = 0;
-// Serial.print("_rightBottom.y-_leftTop.y=");Serial.println(_rightBottom.y-_leftTop.y);         
-// Serial.print("maxValueY="); Serial.println(maxValueY);
-// Serial.print("minValueY="); Serial.println(minValueY);
+
         if(maxValueY > minValueY)
             _channels[ch_idx].pointsInDivisionY = float(_rightBottom.y-_leftTop.y)/(maxValueY-minValueY);
-        
-//Serial.print("pointsInDivisionY="); Serial.println(_channels[ch_idx].pointsInDivisionY);
+
     }
 };
 
@@ -206,8 +203,6 @@ void Chart::lineG(uint8_t ch_idx,int32_t valueY){
     uint16_t y;
     if(_channels[ch_idx].depth>0){ 
         y = getY(ch_idx, valueY);  
-// Serial.print("lineG_Y=");Serial.println(y);         
-// Serial.print("pointsInDivisionY"); Serial.println(_channels[ch_idx].pointsInDivisionY);
         _nextion->line(_leftTop.x, y, _rightBottom.x, y, _channels[ch_idx].color );
     }
 };
@@ -222,7 +217,7 @@ void Chart::lineV(int32_t valueX, ChartLineStyle style, uint16_t fcolor, int32_t
     _nextion->line(x, _leftTop.y, x, _rightBottom.y, fcolor );
 
     if(style.Label)
- //Serial.print("label=");Serial.println(label);         
+      
         _printChartText(label, style.LabelStyle, x, _rightBottom.y, 2, fcolor, bcolor);
 
 
@@ -278,8 +273,6 @@ void Chart::label(uint8_t ch_idx,int32_t valueX, int32_t valueY, char *label, Ch
 
         x = getX(valueX);
         y = getY(ch_idx, valueY);
-//  Serial.print("x=");Serial.println(x);         
-//  Serial.print("y="); Serial.println(y);
 
         if(labelStyle.FlagpoleLenght > 0)
         {

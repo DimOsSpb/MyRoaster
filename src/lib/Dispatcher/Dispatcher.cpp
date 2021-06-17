@@ -10,20 +10,47 @@
 // Nextian display pins config
 
 
+const char RL_Light[] PROGMEM = "Light";
+const char RL_Medium[] PROGMEM = "Medium";
+const char RL_Medium_dark[] PROGMEM = "Medium-dark";
+const char RL_Dark[] PROGMEM = "Dark";
+const char* const RL_GROUPE[] PROGMEM ={RL_Light,RL_Medium,RL_Medium_dark,RL_Dark};
+//const String RL_GROUPE[4] ={"Light","Medium","Medium-dark","Dark"};
+const char RLN_Cinnamon[] PROGMEM = "Cinnamon";
+const char RLN_New_England[] PROGMEM = "New England";
+const char RLN_American[] PROGMEM = "American";
+const char RLN_City[] PROGMEM = "City";
+const char RLN_CityP[] PROGMEM = "City+";
+const char RLN_Full_City[] PROGMEM = "Full City";
+const char RLN_Full_CityP[] PROGMEM = "Full City+";
+const char RLN_Vienna[] PROGMEM = "Vienna";
+const char RLN_French[] PROGMEM = "French";
+const char RLN_Italian[] PROGMEM = "Italian";
 const uint8_t RL_TEMPS[10] ={196,205,210,219,224,225,234,239,243,246};
-const String RL_GROUPE[4] ={"Light","Medium","Medium-dark","Dark"};
-const RoastLevels _RL[10] ={
-    {0,"Cinnamon"},
-    {0,"New England"},
-    {1,"American"},
-    {1,"City"},
-    {1,"City+"},
-    {2,"Full City"},
-    {2,"Full City+"},
-    {3,"Vienna"},
-    {3,"French"},
-    {3,"Italian"}
+const RoastLevels _RL[10] PROGMEM ={
+    {0,RLN_Cinnamon},
+    {0,RLN_New_England},
+    {1,RLN_American},
+    {1,RLN_City},
+    {1,RLN_CityP},
+    {2,RLN_Full_City},
+    {2,RLN_Full_CityP},
+    {3,RLN_Vienna},
+    {3,RLN_French},
+    {3,RLN_Italian}
 };
+// const RoastLevels _RL[10] ={
+//     {0,"Cinnamon"},
+//     {0,"New England"},
+//     {1,"American"},
+//     {1,"City"},
+//     {1,"City+"},
+//     {2,"Full City"},
+//     {2,"Full City+"},
+//     {3,"Vienna"},
+//     {3,"French"},
+//     {3,"Italian"}
+// };
 
 
 
@@ -34,7 +61,7 @@ void Dispatcher::init(){
     _profile.RoRFreq = DEFAULT_ROR_FREQ;
     _nextion.init();
 
-    _nextion.sendCommand("rest");
+    _nextion.sendCommand(("rest"));
     _roaster.init();
 
     
@@ -42,10 +69,10 @@ void Dispatcher::init(){
     changeRoastTime(DEFAULT_PDT,false);
     changeDTR(DEFAULT_DTR,false);
 
-    sprintf(_buf, "page0.b_fc.pco=%u",CHART_FC_COLOR);
+    sprintf_P(_buf, PSTR("page0.b_fc.pco=%u"),CHART_FC_COLOR);
     _nextion.sendCommand(_buf);
-//Serial.println(_buf); 
-    sprintf(_buf, "page0.b_fc.pco2=%u",CHART_FC_COLOR);
+
+    sprintf_P(_buf, PSTR("page0.b_fc.pco2=%u"),CHART_FC_COLOR);
     _nextion.sendCommand(_buf); 
 
     _initChart();
@@ -67,16 +94,16 @@ void Dispatcher::_initChart(){
 }
 
 void Dispatcher::startRoast(){
-    sprintf(_buf, "ref page0");  //cls
+    sprintf_P(_buf, PSTR("ref page0"));  //cls
     _nextion.sendCommand(_buf);    
     _initChart();
     _roaster.start(_profile);
 }
 void Dispatcher::stopRoast(){
     if(_roaster.isStarted()){
-        sprintf(_buf, "page0.b_st.pco2=61277");
+        sprintf_P(_buf, PSTR("page0.b_st.pco2=61277"));
         _nextion.sendCommand(_buf);    
-        sprintf(_buf, "page0.b_st.val=0");
+        sprintf_P(_buf, PSTR("page0.b_st.val=0"));
         _nextion.sendCommand(_buf);    
         _roaster.stop();
     }
@@ -118,20 +145,23 @@ void Dispatcher::changeDTR(uint8_t value, bool _reflect = true){
 }
 
 void Dispatcher::_reflectChanges_RL(){
-    uint8_t _pr_i = _profile.RL-1;
-    sprintf(_buf, "t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
+    uint8_t _pr_i = _profile.RL-1; 
+   strcpy_P(_buf15_1, (char*)pgm_read_word(&RL_GROUPE[_RL[_pr_i].GroupeIndex])); 
+   strcpy_P(_buf15_2, (char*)pgm_read_word(&_RL[_pr_i].Name)); 
+   sprintf_P(_buf, PSTR("t_rl.txt=\"L%u %s/%s\""),_profile.RL, _buf15_1, _buf15_2);
+   //sprintf(_buf, "t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
     _nextion.sendCommand(_buf); 
-    sprintf(_buf, "t_max.txt=\"%u\"",RL_TEMPS[_pr_i]);
+    sprintf_P(_buf, PSTR("t_max.txt=\"%u\""),RL_TEMPS[_pr_i]);
     _nextion.sendCommand(_buf);
 }
 
 void Dispatcher::_reflectChanges_PDT(){
-    sprintf(_buf, "t_rt.txt=\"%u\"",_profile.PDT);
+    sprintf_P(_buf, PSTR("t_rt.txt=\"%u\""),_profile.PDT);
     _nextion.sendCommand(_buf); 
 }
 
 void Dispatcher::_reflectChanges_DTR(){
-    sprintf(_buf, "t_rr.txt=\"%u\"",_profile.DTR);
+    sprintf_P(_buf, PSTR("t_rr.txt=\"%u\""),_profile.DTR);
     _nextion.sendCommand(_buf); 
 }
 
@@ -168,12 +198,12 @@ void Dispatcher::refreshStates(){
                 _chart.addChanelValue(1, _curRoasterStates->Time, _curRoasterStates->RoR);
 
                 _pt = getDHMS(_curRoasterStates->PDT);    
-                sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
+                sprintf_P(_buf, PSTR("%02u:%02u"), _pt.Mins, _pt.Secs);
 
                 _chart.lineV(_curRoasterStates->PDT, CHART_VLSTYLE_PFINISH, CHART_PDT_COLOR, 0, _buf);         // Planned Finish 
 
                 _pt = getDHMS(_curRoasterStates->PFC);    
-                sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
+                sprintf_P(_buf, PSTR("%02u:%02u"), _pt.Mins, _pt.Secs);
 
                 _chart.lineV(_curRoasterStates->PFC, CHART_VLSTYLE_PFC, CHART_PFC_COLOR, 0, _buf);         // Planned FC
 
@@ -186,11 +216,11 @@ void Dispatcher::refreshStates(){
                     sprintf(_buf, "%02u:%02u", timeFC.Mins,timeFC.Secs);
                     _chart.lineV(_curRoasterStates->FC,  CHART_VLSTYLE_FC, CHART_FC_COLOR, 0, _buf);
 
-                    sprintf(_buf, "FC %u°C", _curRoasterStates->FCT);
+                    sprintf_P(_buf, ("FC %u°C"), _curRoasterStates->FCT);
                     _chart.label(0,_curRoasterStates->FC, _curRoasterStates->FCT, _buf, CHART_LSTYLE_FC, CHART_FC_COLOR);
        
                     _pt = getDHMS(_curRoasterStates->StopTime);
-                    sprintf(_buf, "%02u:%02u", _pt.Mins, _pt.Secs);
+                    sprintf_P(_buf, PSTR("%02u:%02u"), _pt.Mins, _pt.Secs);
                     _chart.lineV(_curRoasterStates->StopTime, CHART_VLSTYLE_FINISH, CHART_FINISH_COLOR, 0, _buf);
 
                 }
@@ -198,36 +228,36 @@ void Dispatcher::refreshStates(){
     
             //chart---------------------------------
 
-            sprintf(_buf, "page0.b_fc.txt=\"%02u:%02u\r\n  FC\"",timeFC.Mins,timeFC.Secs);
+            sprintf_P(_buf, PSTR("page0.b_fc.txt=\"%02u:%02u\r\n  FC\""),timeFC.Mins,timeFC.Secs);
             _nextion.sendCommand(_buf);
 
             if(_curRoasterStates->FC > 0){
                 if(_curRoasterStates->StopFlag){
-                    sprintf(_buf, "page0.b_st.pco2=%s", _refreshCounter & 1 ? "RED" : "61277");
+                    sprintf_P(_buf, PSTR("page0.b_st.pco2=%s"), _refreshCounter & 1 ? F("RED") : F("61277"));
                     _nextion.sendCommand(_buf);                
                 }
 
 
             }
             else 
-                sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",0,0);
+                sprintf_P(_buf, PSTR("page0.t_left.txt=\"%02u:%02u\""),0,0);
 
             _btn_down_text = BTN_ST_OFF_DOWN_TEXT;
         }
         else
             _btn_down_text = BTN_ST_ON_DOWN_TEXT;
 
-        sprintf(_buf, "page0.b_st.txt=\"%02u:%02u%s\"",time.Mins,time.Secs, _btn_down_text.c_str());
+        sprintf_P(_buf, PSTR("page0.b_st.txt=\"%02u:%02u%s\""),time.Mins,time.Secs, _btn_down_text.c_str());
         _nextion.sendCommand(_buf);
 
-        sprintf(_buf, "page0.t_ror.txt=\"%u\"",_curRoasterStates->RoR);
+        sprintf_P(_buf, PSTR("page0.t_ror.txt=\"%u\""),_curRoasterStates->RoR);
         _nextion.sendCommand(_buf); 
-        sprintf(_buf, "page0.t_bt.txt=\"%u\"",_curRoasterStates->BT);
+        sprintf_P(_buf, PSTR("page0.t_bt.txt=\"%u\""),_curRoasterStates->BT);
         _nextion.sendCommand(_buf);
 
 
         leftTime = getDHMS(_curRoasterStates->LeftTime);
-        sprintf(_buf, "page0.t_left.txt=\"%02u:%02u\"",leftTime.Mins,leftTime.Secs);
+        sprintf_P(_buf, PSTR("page0.t_left.txt=\"%02u:%02u\""),leftTime.Mins,leftTime.Secs);
         _nextion.sendCommand(_buf);         
 
     }
@@ -244,35 +274,27 @@ void Dispatcher::listEvents(){
         switch ((int)input[0])
         {
             case ON_PAGE_COMMAND:
-                //Serial.print("onPage="); Serial.println(input[1]);
                 _onNextionPage(input[1]);
                 break;
             case BTN_ST_ON_COMMAND:
-                //Serial.println("Start");
                 startRoast();
                 break;
             case BTN_ST_OFF_COMMAND:
-                //Serial.println("Stop");
                 stopRoast();
                 break;
             case BTN_FC_ON_COMMAND:
-                //Serial.println("FC");
                 startFirstCrack();
                 break;
             case BTN_FC_OFF_COMMAND:
-                //Serial.println("SFC");
                 stopFirstCrack();
                 break;
             case RL_COMMAND:
-                //Serial.print("RL="); Serial.println(input[1]);
                 changeRoastLevel(input[1]);
                 break;                                
             case RT_COMMAND:
-                //Serial.print("RL="); Serial.println(input[1]);
                 changeRoastTime(input[1]);
                 break;                                
             case TR_COMMAND:
-                //Serial.print("RL="); Serial.println(input[1]);
                 changeDTR(input[1]);
                 break;                                
             default:

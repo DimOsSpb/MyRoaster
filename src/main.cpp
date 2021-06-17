@@ -44,14 +44,14 @@ void loop()
   if (Serial.available() > 0)
   {
 
-    //String inData = Serial.readStringUntil('\n'); 
+//     String inData = Serial.readStringUntil('\n'); 
+// Serial.println(inData);
 
-
-    delay(40);
+    //delay(40);
     
     //DynamicJsonBuffer jsonBuffer;
     // Allocate the JsonDocument in the heap
-    StaticJsonDocument<280> doc;
+    StaticJsonDocument<100> doc;
     
     DeserializationError error = deserializeJson(doc, Serial);
 
@@ -59,15 +59,19 @@ void loop()
     if (!error){
 
       uint16_t _type = doc["type"];
-
+      const char* _id = doc["id"];
 
       if(_type == MSG_TYPE_HI_R)
       {
-          doc.clear();
-          doc["type"] = MSG_TYPE_HI_H;
-          doc["model"] = "v1";
-          doc["id"] = "undef";
-          serializeJson(doc,Serial);
+            doc.clear();
+            doc["type"] = MSG_TYPE_HI_H;
+            doc["model"] = "v1";
+            doc["id"] = _id;
+//            Serial.println(_type);
+//  Serial.println(_id);
+                //delay(40);
+            serializeJson(doc,Serial);
+          //Serial.write("{\"type\":23232,\"model\":\"v1\",\"id\":\"undef\"}");
       }
     }
 

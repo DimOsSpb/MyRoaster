@@ -62,7 +62,7 @@
 struct RoastLevels
 {
     uint8_t GroupeIndex;
-    String Name;
+    const char* Name;
 
 };
 
@@ -93,6 +93,8 @@ class Dispatcher{
 
         RoastProfile _profile;
         char _buf[100];
+        char _buf15_1[15], _buf15_2[15];
+
         void _reflectChanges_RL();
         void _reflectChanges_PDT();
         void _reflectChanges_DTR();

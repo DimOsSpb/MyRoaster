@@ -5,26 +5,13 @@
 Nextion::Nextion(uint8_t RX, uint8_t TX):_serial(RX, TX){};
 void Nextion::sendCommand(const char* cmd)
 {
-    // while (Nextion.available())
-    // {
-    //     Nextion.read();
-    // }
-    
+   //Serial.println(cmd);
     _serial.print(cmd);
     _serial.write(_ndt,3);
 };
 void Nextion::init(){
 
-  // _serial.begin(CTD_BAUD);  //if arduino rebooted, anticipated baud=CTD_BAUD => Start serial comunication at baud=CTD_BAUD
-  // _serial.print("rest");    //reset Nextion
-  // _serial.write(_ndt,3);
-  // delay(500);  // This delay is just in case the nextion display didn't start yet, to be sure it will receive the following command.
   _serial.begin(9600);
-  //Serial.println("baud="+CTD_BAUD);
-  // _serial.print("baud=38400");
-  // _serial.write(_ndt,3);
-  // _serial.end();  // End the serial comunication of baud=9600
-  // _serial.begin(115200);  // Start serial comunication at baud=115200
 
 };
 uint8_t Nextion::readInput(uint8_t max, byte *buffer){
@@ -38,10 +25,6 @@ uint8_t Nextion::readInput(uint8_t max, byte *buffer){
     {
       cur_byte = _serial.read();
       delay(30);
-
-      // sprintf(tmp,"%X ",cur_byte);
-      // Serial.print(tmp);
-      // Serial.print("count="); Serial.println(count);
 
       if(scount == 2)             // 0xBB 0xBB - command detected, read to the end...
       {
@@ -74,24 +57,23 @@ uint8_t Nextion::readInput(uint8_t max, byte *buffer){
   return count; 
 };
 void Nextion::line(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby,uint16_t color){
-  sprintf(_buf, "line %u,%u,%u,%u,%u",ltx,lty,rbx,rby,color);
+  sprintf_P(_buf, PSTR("line %u,%u,%u,%u,%u"),ltx,lty,rbx,rby,color);
   sendCommand(_buf);
 };
 void Nextion::cropPic(uint16_t ltx,uint16_t lty,uint16_t rbx,uint16_t rby){
-  sprintf(_buf, "picq %u,%u,%u,%u,%u",ltx,lty,rbx-ltx+1,rby-lty+1,0);
+  sprintf_P(_buf, PSTR("picq %u,%u,%u,%u,%u"),ltx,lty,rbx-ltx+1,rby-lty+1,0);
   sendCommand(_buf);
 
 };
 
-void Nextion::fill(uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy,uint16_t color){
-  sprintf(_buf, "fill %u,%u,%u,%u,%u",ltx,lty,dx,dy,color);
-  sendCommand(_buf);
-};
+// void Nextion::fill(uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy,uint16_t color){
+//   sprintf(_buf, "fill %u,%u,%u,%u,%u",ltx,lty,dx,dy,color);
+//   sendCommand(_buf);
+// };
 
 void Nextion::text(char *txt, uint16_t ltx,uint16_t lty,uint16_t dx,uint16_t dy, uint8_t fontN, uint16_t tcolor, uint16_t bcolor, uint8_t bcflag){
 
-  sprintf(_buf, "xstr %u,%u,%u,%u,%u,%u,%u,1,1,%u,\"%s\"",ltx,lty,dx,dy,fontN,tcolor,bcolor,bcflag,txt);
-//Serial.println(_buf);
+  sprintf_P(_buf, PSTR("xstr %u,%u,%u,%u,%u,%u,%u,1,1,%u,\"%s\""),ltx,lty,dx,dy,fontN,tcolor,bcolor,bcflag,txt);
   sendCommand(_buf);
 };
 
