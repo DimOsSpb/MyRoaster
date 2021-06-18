@@ -21,7 +21,7 @@ struct RoastProfile
 };
 struct RoasterStates
 {
-    uint32_t Time;
+    uint32_t Time;          //Ms from Start
     uint32_t LeftTime;
     uint32_t StopTime;
     uint32_t PDT;           //Planned Development Duration time in Ms

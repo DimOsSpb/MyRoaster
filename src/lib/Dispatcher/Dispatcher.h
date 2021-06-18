@@ -2,6 +2,9 @@
 #include <Nextion.h>
 #include <Roaster.h>
 #include <Chart.h>
+#include <ArduinoJson.h>
+
+#define STATES_REFRESH_PERIOD 1000
 
 #define NEXTIAN_RX 9
 #define NEXTIAN_TX 10
@@ -45,6 +48,10 @@
 #define TR_COMMAND 102
 #define ON_PAGE_COMMAND 200
 
+#define MSG_TYPE_HI_R 32323
+#define MSG_TYPE_HI_H 23232U
+#define MSG_TYPE_STATES 100
+
 #define BTN_ST_ON_DOWN_TEXT "\r\n Start" 
 #define BTN_ST_OFF_DOWN_TEXT "\r\n Stop"
 #define BTN_FC_ON_DOWN_TEXT "\r\n FCE" 
@@ -82,16 +89,21 @@ class Dispatcher{
         void changeRoastLevel(uint8_t level,bool _reflect);
         void changeRoastTime(uint8_t value,bool _reflect);
         void changeDTR(uint8_t value,bool _reflect);
+        void changeStatesRefresh(uint32_t period);
+
     private:
+        Timer _statesRefreshPeriod;
         Nextion _nextion;
         Roaster _roaster;
         Chart _chart;
+
 
         uint16_t _chartLastBT,_chartLastRoR;
         uint32_t _lastChartTime;
         uint8_t _refreshCounter;
 
         RoastProfile _profile;
+        StaticJsonDocument<150> _doc;
         char _buf[100];
         char _buf15_1[15], _buf15_2[15];
 
@@ -100,6 +112,7 @@ class Dispatcher{
         void _reflectChanges_DTR();
         void _onNextionPage(uint8_t page);
         void _initChart();
+        void _sendStatesToHub(RoasterStates *curRoasterStates);
 
      
 };

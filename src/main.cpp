@@ -7,18 +7,15 @@
 #include <Roaster.h>
 #include <Dispatcher.h>
 
-#define STATES_REFRESH_PERIOD 1000
+
 #define CONTROL_READ_PERIOD 100
 
-#define MSG_TYPE_HI_R 32323
-#define MSG_TYPE_HI_H 23232U
 
-Timer timerStatesRefresh(STATES_REFRESH_PERIOD);
+
+
 Timer timerEvents(CONTROL_READ_PERIOD);
 
 Dispatcher dispatcher;
-  
-
 
 void setup()
 {
@@ -35,51 +32,11 @@ void loop()
   // Handling control events...
   dispatcher.listEvents();
 
-
-  if (timerStatesRefresh.isReady())
-  { // Refresh all states...
-    dispatcher.refreshStates();
-  }
-
-  if (Serial.available() > 0)
-  {
-
-//     String inData = Serial.readStringUntil('\n'); 
-// Serial.println(inData);
-
-    //delay(40);
-    
-    //DynamicJsonBuffer jsonBuffer;
-    // Allocate the JsonDocument in the heap
-    StaticJsonDocument<100> doc;
-    
-    DeserializationError error = deserializeJson(doc, Serial);
-
-    // // Test if parsing succeeds.
-    if (!error){
-
-      uint16_t _type = doc["type"];
-      const char* _id = doc["id"];
-
-      if(_type == MSG_TYPE_HI_R)
-      {
-            doc.clear();
-            doc["type"] = MSG_TYPE_HI_H;
-            doc["model"] = "v1";
-            doc["id"] = _id;
-//            Serial.println(_type);
-//  Serial.println(_id);
-                //delay(40);
-            serializeJson(doc,Serial);
-          //Serial.write("{\"type\":23232,\"model\":\"v1\",\"id\":\"undef\"}");
-      }
-    }
+  // Refresh all states...
+  dispatcher.refreshStates();
+  
 
 
-  }
-
-
-    
 
   //delay(300);
 }
