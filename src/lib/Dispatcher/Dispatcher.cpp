@@ -13,8 +13,10 @@ const char RL_Light[] PROGMEM = "Light";
 const char RL_Medium[] PROGMEM = "Medium";
 const char RL_Medium_dark[] PROGMEM = "Medium-dark";
 const char RL_Dark[] PROGMEM = "Dark";
-const char *const RL_GROUPE[] PROGMEM = {RL_Light, RL_Medium, RL_Medium_dark, RL_Dark};
+//const char *const RL_GROUPE[4] PROGMEM = {RL_Light, RL_Medium, RL_Medium_dark, RL_Dark};
+
 //const String RL_GROUPE[4] ={"Light","Medium","Medium-dark","Dark"};
+
 const char RLN_Cinnamon[] PROGMEM = "Cinnamon";
 const char RLN_New_England[] PROGMEM = "New England";
 const char RLN_American[] PROGMEM = "American";
@@ -26,17 +28,8 @@ const char RLN_Vienna[] PROGMEM = "Vienna";
 const char RLN_French[] PROGMEM = "French";
 const char RLN_Italian[] PROGMEM = "Italian";
 const uint8_t RL_TEMPS[10] = {196, 205, 210, 219, 224, 225, 234, 239, 243, 246};
-const RoastLevels _RL[10] PROGMEM = {
-    {0, RLN_Cinnamon},
-    {0, RLN_New_England},
-    {1, RLN_American},
-    {1, RLN_City},
-    {1, RLN_CityP},
-    {2, RLN_Full_City},
-    {2, RLN_Full_CityP},
-    {3, RLN_Vienna},
-    {3, RLN_French},
-    {3, RLN_Italian}};
+const char* const _RL[] PROGMEM = {RL_Light,RL_Light,RL_Medium,RL_Medium,RL_Medium,RL_Medium_dark,RL_Medium_dark,RL_Dark,RL_Dark,RL_Dark};
+const char* const _RLN[] PROGMEM = {RLN_Cinnamon,RLN_New_England,RLN_American,RLN_City,RLN_CityP,RLN_Full_City,RLN_Full_CityP,RLN_Vienna,RLN_French,RLN_Italian};
 // const RoastLevels _RL[10] ={
 //     {0,"Cinnamon"},
 //     {0,"New England"},
@@ -50,7 +43,11 @@ const RoastLevels _RL[10] PROGMEM = {
 //     {3,"Italian"}
 // };
 
-Dispatcher::Dispatcher() : _statesRefreshPeriod(STATES_REFRESH_PERIOD), _nextion(NEXTIAN_RX, NEXTIAN_TX), _chart(&_nextion, CHART_X, CHART_Y, CHART_DX, CHART_DY + CHART_Y){};
+
+Dispatcher::Dispatcher() :  _statesRefreshPeriod(STATES_REFRESH_PERIOD),
+                            _statesForHubRefreshPeriod(0),
+                            _nextion(NEXTIAN_RX, NEXTIAN_TX), 
+                            _chart(&_nextion, CHART_X, CHART_Y, CHART_DX, CHART_DY + CHART_Y){};
 
 void Dispatcher::init()
 {
@@ -75,9 +72,9 @@ void Dispatcher::init()
     refreshStates();
 };
 
-void Dispatcher::changeStatesRefresh(uint32_t period)
+void Dispatcher::changeForHubStatesRefresh(uint32_t period)
 {
-    _statesRefreshPeriod.start(period);
+    _statesForHubRefreshPeriod.start(period);
 };
 void Dispatcher::_sendStatesToHub(RoasterStates *curRoasterStates){
 
@@ -172,8 +169,10 @@ void Dispatcher::changeDTR(uint8_t value, bool _reflect = true)
 void Dispatcher::_reflectChanges_RL()
 {
     uint8_t _pr_i = _profile.RL - 1;
-    strcpy_P(_buf15_1, (char *)pgm_read_word(&RL_GROUPE[_RL[_pr_i].GroupeIndex]));
-    strcpy_P(_buf15_2, (char *)pgm_read_word(&_RL[_pr_i].Name));
+
+    //strcpy_P(_buf15_1, (char *)pgm_read_word(&RL_GROUPE[(_RL[_pr_i].GroupeIndex)]));
+    strcpy_P(_buf15_1, (char *)pgm_read_word(&_RL[_pr_i]));
+    strcpy_P(_buf15_2, (char *)pgm_read_word(&_RLN[_pr_i]));
     sprintf_P(_buf, PSTR("t_rl.txt=\"L%u %s/%s\""), _profile.RL, _buf15_1, _buf15_2);
     //sprintf(_buf, "t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
     _nextion.sendCommand(_buf);
@@ -201,13 +200,22 @@ void Dispatcher::_onNextionPage(uint8_t page)
 }
 void Dispatcher::refreshStates()
 {
-    if (_statesRefreshPeriod.isReady())
-    {
+    bool _refresh = _statesRefreshPeriod.isReady();
+    bool _refreshForHub = _statesForHubRefreshPeriod.isReady();
+    RoasterStates *_curRoasterStates;
 
-        RoasterStates *_curRoasterStates = _roaster.readStates();
+    if (_refresh | _refreshForHub)
+    //Serial.println("if (_refresh | _refreshForHub)");
+        _curRoasterStates = _roaster.readStates();
+    
+    if(_refreshForHub){
+        
+    //Serial.println("if (_refreshForHub)");
+        _sendStatesToHub(_curRoasterStates);
+    }
+    if(_refresh){
 
-        //_sendStatesToHub(_curRoasterStates);
-
+    //Serial.println("if (_refresh)");
         DHMS time = getDHMS(_curRoasterStates->Time);
         DHMS timeFC = getDHMS(_curRoasterStates->FC);
         DHMS leftTime, _pt;
@@ -249,10 +257,10 @@ void Dispatcher::refreshStates()
                     if (_curRoasterStates->FC > 0)
                     {
 
-                        sprintf(_buf, "%02u:%02u", timeFC.Mins, timeFC.Secs);
+                        sprintf_P(_buf, PSTR("%02u:%02u"), timeFC.Mins, timeFC.Secs);
                         _chart.lineV(_curRoasterStates->FC, CHART_VLSTYLE_FC, CHART_FC_COLOR, 0, _buf);
 
-                        sprintf_P(_buf, ("FC %u°C"), _curRoasterStates->FCT);
+                        sprintf_P(_buf, PSTR("FC %u°C"), _curRoasterStates->FCT);
                         _chart.label(0, _curRoasterStates->FC, _curRoasterStates->FCT, _buf, CHART_LSTYLE_FC, CHART_FC_COLOR);
 
                         _pt = getDHMS(_curRoasterStates->StopTime);
@@ -310,24 +318,31 @@ void Dispatcher::listEvents()
         //StaticJsonDocument<150> doc;
         _doc.clear();
         DeserializationError error = deserializeJson(_doc, Serial);
-        Serial.println("InListen");
+        //Serial.println("InListen");
         if (!error)
         {
-            uint16_t _type = _doc[F("type")];
-            Serial.println(_type);
+            uint16_t _type = _doc["type"];
+            //Serial.println(_type);
 
             if (_type == MSG_TYPE_HI_R)
             {
-                const char *_id = _doc[F("json")][F("id")];
-                uint32_t _refreshPeriod = _doc[F("json")][F("timestatusupdate")];
+                //Serial.println("MSG_TYPE_HI_R");
+                
+                const char *_id = _doc["json"]["id"];
+                uint32_t _refreshPeriod = _doc["json"]["timestatusupdate"];
+                
                 _doc.clear();
-                _doc[F("type")] = MSG_TYPE_HI_H;
-                _doc[F("json")][F("model")] = "v1";
-                _doc[F("json")][F("id")] = _id;
+                _doc["type"] = MSG_TYPE_HI_H;
+                _doc["json"]["model"] = "v1";
+                _doc["json"]["id"] = _id;
 
+                Serial.flush();
+                //Serial.println(
                 serializeJson(_doc, Serial);
+                //);
 
-                changeStatesRefresh(_refreshPeriod);
+                changeForHubStatesRefresh(_refreshPeriod);
+                //Serial.println(_refreshPeriod);
             }
         }
     }

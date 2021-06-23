@@ -10,8 +10,12 @@ void Timer::start(uint32_t periodMS){
     _periodMs = periodMS;
 };
 
+void Timer::stop(){
+    _periodMs = 0;
+};
+
 bool Timer::isReady(){
-    if (millis() - _timer >= _periodMs) {
+    if ((_periodMs > 0) & (millis() - _timer >= _periodMs)) {
       do {
         _timer += _periodMs;
         if (_timer < _periodMs) break;          //if uint32 overload

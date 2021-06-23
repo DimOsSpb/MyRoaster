@@ -66,12 +66,7 @@
 #define DEFAULT_PDT 12          //Planned Development Time
 #define MAX_PDT 20
 
-struct RoastLevels
-{
-    uint8_t GroupeIndex;
-    const char* Name;
 
-};
 
 class Dispatcher{
     
@@ -89,10 +84,11 @@ class Dispatcher{
         void changeRoastLevel(uint8_t level,bool _reflect);
         void changeRoastTime(uint8_t value,bool _reflect);
         void changeDTR(uint8_t value,bool _reflect);
-        void changeStatesRefresh(uint32_t period);
+        void changeForHubStatesRefresh(uint32_t period);
 
     private:
         Timer _statesRefreshPeriod;
+        Timer _statesForHubRefreshPeriod;
         Nextion _nextion;
         Roaster _roaster;
         Chart _chart;
@@ -103,7 +99,7 @@ class Dispatcher{
         uint8_t _refreshCounter;
 
         RoastProfile _profile;
-        StaticJsonDocument<150> _doc;
+        StaticJsonDocument<300> _doc;
         char _buf[100];
         char _buf15_1[15], _buf15_2[15];
 

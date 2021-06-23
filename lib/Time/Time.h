@@ -29,6 +29,7 @@ class Timer{
         Timer();
         Timer(uint32_t periodMs);   //periodMs - Counter in Ms
         void start(uint32_t periodMs);
+        void stop();
         bool isReady();
     private:
         uint32_t _periodMs = ONE_SEC;
