@@ -78,12 +78,12 @@ void Dispatcher::changeForHubStatesRefresh(uint32_t period)
 };
 void Dispatcher::_sendStatesToHub(RoasterStates *curRoasterStates){
 
-    _doc.clear();
-    _doc[F("type")] = MSG_TYPE_STATES;
-    _doc[F("json")][F("ms")] = curRoasterStates->Time;
-    _doc[F("json")][F("bt")] = curRoasterStates->BT;
+    // _doc.clear();
+    // _doc[F("type")] = MSG_TYPE_STATES;
+    // _doc[F("json")][F("ms")] = curRoasterStates->Time;
+    // _doc[F("json")][F("bt")] = curRoasterStates->BT;
 
-    serializeJson(_doc, Serial);
+    // serializeJson(_doc, Serial);
 };
 
 void Dispatcher::_initChart()
@@ -313,35 +313,36 @@ void Dispatcher::listEvents()
     if (Serial.available() > 0)
     {
 
-        //     String inData = Serial.readStringUntil('\n');
+        String inData = Serial.readStringUntil('\n');
 
         //StaticJsonDocument<150> doc;
-        _doc.clear();
-        DeserializationError error = deserializeJson(_doc, Serial);
+        // _doc.clear();
+        // DeserializationError error = deserializeJson(_doc, Serial);
         //Serial.println("InListen");
-        if (!error)
+        if (inData.length() > 0)
         {
-            uint16_t _type = _doc["type"];
+            Serial.print(inData);
+            uint16_t _type = 0;//_doc["type"];
             //Serial.println(_type);
 
             if (_type == MSG_TYPE_HI_R)
             {
                 //Serial.println("MSG_TYPE_HI_R");
                 
-                const char *_id = _doc["json"]["id"];
-                uint32_t _refreshPeriod = _doc["json"]["timestatusupdate"];
+                // const char *_id = _doc["json"]["id"];
+                // uint32_t _refreshPeriod = _doc["json"]["timestatusupdate"];
                 
-                _doc.clear();
-                _doc["type"] = MSG_TYPE_HI_H;
-                _doc["json"]["model"] = "v1";
-                _doc["json"]["id"] = _id;
+                // _doc.clear();
+                // _doc["type"] = MSG_TYPE_HI_H;
+                // _doc["json"]["model"] = "v1";
+                // _doc["json"]["id"] = _id;
 
-                Serial.flush();
-                //Serial.println(
-                serializeJson(_doc, Serial);
+                // Serial.flush();
+                // //Serial.println(
+                // serializeJson(_doc, Serial);
                 //);
 
-                changeForHubStatesRefresh(_refreshPeriod);
+                //changeForHubStatesRefresh(_refreshPeriod);
                 //Serial.println(_refreshPeriod);
             }
         }

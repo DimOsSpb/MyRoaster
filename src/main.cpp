@@ -1,6 +1,5 @@
 #include <SoftwareSerial.h>
 #include <Arduino.h>
-#include <ArduinoJson.h>
 #include <max6675.h>
 #include <Time.h>
 #include <Nextion.h>

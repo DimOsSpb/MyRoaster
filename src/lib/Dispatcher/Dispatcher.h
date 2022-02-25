@@ -2,7 +2,7 @@
 #include <Nextion.h>
 #include <Roaster.h>
 #include <Chart.h>
-#include <ArduinoJson.h>
+
 
 #define STATES_REFRESH_PERIOD 1000
 
@@ -99,7 +99,6 @@ class Dispatcher{
         uint8_t _refreshCounter;
 
         RoastProfile _profile;
-        StaticJsonDocument<300> _doc;
         char _buf[100];
         char _buf15_1[15], _buf15_2[15];
 
