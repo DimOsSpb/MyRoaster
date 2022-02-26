@@ -36,13 +36,23 @@
 #define CHART_PDT_COLOR 38066u
 #define CHART_PFC_COLOR 38066u
 
-
+	// START    RoasterCommand = 10
+	// STOP     RoasterCommand = 11
+	// ON_SW    RoasterCommand = 12
+	// FC_START RoasterCommand = 20
+	// FC_END   RoasterCommand = 21
+	// FC_SW    RoasterCommand = 22
+	// SC_START RoasterCommand = 30
+	// SC_END   RoasterCommand = 31
+	// SC_SW    RoasterCommand = 32
+    
 #define BTN_ST_ON_COMMAND 10
 #define BTN_ST_OFF_COMMAND 11
 #define BTN_FC_ON_COMMAND 20
 #define BTN_FC_OFF_COMMAND 21
 #define BTN_SC_ON_COMMAND 30
 #define BTN_SC_OFF_COMMAND 31
+
 #define RL_COMMAND 100
 #define RT_COMMAND 101
 #define TR_COMMAND 102

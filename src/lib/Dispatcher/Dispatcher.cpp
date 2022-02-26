@@ -4,6 +4,7 @@
 #include <Roaster.h>
 #include <Time.h>
 #include <Chart.h>
+#include <parser.h>
 
 // RX - digital output 9, connect on Nextian TX
 // TX - digital output 10, connect on Nextian RX
@@ -13,9 +14,9 @@ const char RL_Light[] PROGMEM = "Light";
 const char RL_Medium[] PROGMEM = "Medium";
 const char RL_Medium_dark[] PROGMEM = "Medium-dark";
 const char RL_Dark[] PROGMEM = "Dark";
-//const char *const RL_GROUPE[4] PROGMEM = {RL_Light, RL_Medium, RL_Medium_dark, RL_Dark};
+// const char *const RL_GROUPE[4] PROGMEM = {RL_Light, RL_Medium, RL_Medium_dark, RL_Dark};
 
-//const String RL_GROUPE[4] ={"Light","Medium","Medium-dark","Dark"};
+// const String RL_GROUPE[4] ={"Light","Medium","Medium-dark","Dark"};
 
 const char RLN_Cinnamon[] PROGMEM = "Cinnamon";
 const char RLN_New_England[] PROGMEM = "New England";
@@ -28,8 +29,8 @@ const char RLN_Vienna[] PROGMEM = "Vienna";
 const char RLN_French[] PROGMEM = "French";
 const char RLN_Italian[] PROGMEM = "Italian";
 const uint8_t RL_TEMPS[10] = {196, 205, 210, 219, 224, 225, 234, 239, 243, 246};
-const char* const _RL[] PROGMEM = {RL_Light,RL_Light,RL_Medium,RL_Medium,RL_Medium,RL_Medium_dark,RL_Medium_dark,RL_Dark,RL_Dark,RL_Dark};
-const char* const _RLN[] PROGMEM = {RLN_Cinnamon,RLN_New_England,RLN_American,RLN_City,RLN_CityP,RLN_Full_City,RLN_Full_CityP,RLN_Vienna,RLN_French,RLN_Italian};
+const char *const _RL[] PROGMEM = {RL_Light, RL_Light, RL_Medium, RL_Medium, RL_Medium, RL_Medium_dark, RL_Medium_dark, RL_Dark, RL_Dark, RL_Dark};
+const char *const _RLN[] PROGMEM = {RLN_Cinnamon, RLN_New_England, RLN_American, RLN_City, RLN_CityP, RLN_Full_City, RLN_Full_CityP, RLN_Vienna, RLN_French, RLN_Italian};
 // const RoastLevels _RL[10] ={
 //     {0,"Cinnamon"},
 //     {0,"New England"},
@@ -43,11 +44,10 @@ const char* const _RLN[] PROGMEM = {RLN_Cinnamon,RLN_New_England,RLN_American,RL
 //     {3,"Italian"}
 // };
 
-
-Dispatcher::Dispatcher() :  _statesRefreshPeriod(STATES_REFRESH_PERIOD),
-                            _statesForHubRefreshPeriod(0),
-                            _nextion(NEXTIAN_RX, NEXTIAN_TX), 
-                            _chart(&_nextion, CHART_X, CHART_Y, CHART_DX, CHART_DY + CHART_Y){};
+Dispatcher::Dispatcher() : _statesRefreshPeriod(STATES_REFRESH_PERIOD),
+                           _statesForHubRefreshPeriod(0),
+                           _nextion(NEXTIAN_RX, NEXTIAN_TX),
+                           _chart(&_nextion, CHART_X, CHART_Y, CHART_DX, CHART_DY + CHART_Y){};
 
 void Dispatcher::init()
 {
@@ -102,7 +102,7 @@ void Dispatcher::_initChart()
 
 void Dispatcher::startRoast()
 {
-    sprintf_P(_buf, PSTR("ref page0")); //cls
+    sprintf_P(_buf, PSTR("ref page0")); // cls
     _nextion.sendCommand(_buf);
     _initChart();
     _roaster.start(_profile);
@@ -170,11 +170,11 @@ void Dispatcher::_reflectChanges_RL()
 {
     uint8_t _pr_i = _profile.RL - 1;
 
-    //strcpy_P(_buf15_1, (char *)pgm_read_word(&RL_GROUPE[(_RL[_pr_i].GroupeIndex)]));
+    // strcpy_P(_buf15_1, (char *)pgm_read_word(&RL_GROUPE[(_RL[_pr_i].GroupeIndex)]));
     strcpy_P(_buf15_1, (char *)pgm_read_word(&_RL[_pr_i]));
     strcpy_P(_buf15_2, (char *)pgm_read_word(&_RLN[_pr_i]));
     sprintf_P(_buf, PSTR("t_rl.txt=\"L%u %s/%s\""), _profile.RL, _buf15_1, _buf15_2);
-    //sprintf(_buf, "t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
+    // sprintf(_buf, "t_rl.txt=\"L%u %s/%s\"",_profile.RL, RL_GROUPE[_RL[_pr_i].GroupeIndex].c_str(), _RL[_pr_i].Name.c_str());
     _nextion.sendCommand(_buf);
     sprintf_P(_buf, PSTR("t_max.txt=\"%u\""), RL_TEMPS[_pr_i]);
     _nextion.sendCommand(_buf);
@@ -205,17 +205,19 @@ void Dispatcher::refreshStates()
     RoasterStates *_curRoasterStates;
 
     if (_refresh | _refreshForHub)
-    //Serial.println("if (_refresh | _refreshForHub)");
+        // Serial.println("if (_refresh | _refreshForHub)");
         _curRoasterStates = _roaster.readStates();
-    
-    if(_refreshForHub){
-        
-    //Serial.println("if (_refreshForHub)");
+
+    if (_refreshForHub)
+    {
+
+        // Serial.println("if (_refreshForHub)");
         _sendStatesToHub(_curRoasterStates);
     }
-    if(_refresh){
+    if (_refresh)
+    {
 
-    //Serial.println("if (_refresh)");
+        // Serial.println("if (_refresh)");
         DHMS time = getDHMS(_curRoasterStates->Time);
         DHMS timeFC = getDHMS(_curRoasterStates->FC);
         DHMS leftTime, _pt;
@@ -227,7 +229,7 @@ void Dispatcher::refreshStates()
             if (_curRoasterStates->State == ROASTER_STATE_STARTED)
             {
 
-                //Chart-------------------------------------
+                // Chart-------------------------------------
                 if (_chart.fieldIsOver())
                 {
                     stopRoast();
@@ -269,7 +271,7 @@ void Dispatcher::refreshStates()
                     }
                 }
 
-                //chart---------------------------------
+                // chart---------------------------------
 
                 sprintf_P(_buf, PSTR("page0.b_fc.txt=\"%02u:%02u\r\n  FC\""), timeFC.Mins, timeFC.Secs);
                 _nextion.sendCommand(_buf);
@@ -308,47 +310,51 @@ void Dispatcher::refreshStates()
 
 void Dispatcher::listEvents()
 {
-    
-    //From HUB
+    // From HUB
     if (Serial.available() > 0)
     {
 
         String inData = Serial.readStringUntil('\n');
 
-        //StaticJsonDocument<150> doc;
-        // _doc.clear();
-        // DeserializationError error = deserializeJson(_doc, Serial);
-        //Serial.println("InListen");
+        //{"type":32323,"json":{"model":"RHUB","id":"cd881408-179d-23c2-7237-546e394f6e9a","timestatusupdate":1000}}
+
         if (inData.length() > 0)
         {
-            Serial.print(inData);
-            uint16_t _type = 0;//_doc["type"];
-            //Serial.println(_type);
+            Parser p = Parser(&inData);
+            uint32_t _type = p.getInt("type");
 
-            if (_type == MSG_TYPE_HI_R)
+            String _id, _json;
+            uint32_t _refreshPeriod;
+
+            Serial.println(_type);
+            switch (_type)
             {
-                //Serial.println("MSG_TYPE_HI_R");
-                
-                // const char *_id = _doc["json"]["id"];
-                // uint32_t _refreshPeriod = _doc["json"]["timestatusupdate"];
-                
-                // _doc.clear();
-                // _doc["type"] = MSG_TYPE_HI_H;
-                // _doc["json"]["model"] = "v1";
-                // _doc["json"]["id"] = _id;
+                case MSG_TYPE_HI_R:
+                    Serial.println("MSG_TYPE_HI_R");
 
-                // Serial.flush();
-                // //Serial.println(
-                // serializeJson(_doc, Serial);
-                //);
+                    _id = p.getString("id");
+                    _refreshPeriod = p.getInt("timestatusupdate");
 
-                //changeForHubStatesRefresh(_refreshPeriod);
-                //Serial.println(_refreshPeriod);
+                    Serial.flush();
+                    sprintf_P(_buf, PSTR("{\"type\":%u,\"json\":{\"model\":\"%s\",\"id\":\"%s\"}}"), MSG_TYPE_HI_H, "v1", _id);
+                    Serial.println(_buf);
+                    changeForHubStatesRefresh(_refreshPeriod);
+
+                    break;
+                case BTN_ST_ON_COMMAND:
+                    Serial.println("BTN_ST_ON_COMMAND");
+                    break;
+                case BTN_ST_OFF_COMMAND:
+                    Serial.println("BTN_ST_OFF_COMMAND");
+                    break;
+                default:
+                    break;
             }
+
         }
     }
 
-    //From Nexion
+    // From Nexion
     byte input[10];
     if (_nextion.readInput(9, &input[0]) > 0)
     {
@@ -383,6 +389,4 @@ void Dispatcher::listEvents()
             break;
         }
     }
-
-
 }
