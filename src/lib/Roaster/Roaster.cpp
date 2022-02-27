@@ -2,7 +2,7 @@
 
 Roaster::Roaster(): _thermo_z_cb(THERMO_Z_CB_CLK, THERMO_Z_CB_CS, THERMO_Z_CB_DO){};
 void Roaster::init(){
-    _curSates.State = ROASTER_STATE_STOPPED;    
+    _curSates.Stage = STOPPED;    
 };
 void Roaster::initRoRTimer(){
     _timerRoR = millis()+_profile.RoRFreq*1000;
@@ -23,24 +23,25 @@ bool Roaster::start(RoastProfile profile){
     _curSates.StopTime = 0;
     _curSates.StopFlag = false;
     _curSates.RoRFlag = false;
-    _curSates.State = ROASTER_STATE_STARTED;    
+    _curSates.Stage = STARTED;    
 
     return true;    
 };
 bool Roaster::stop(){
     //readStates();
-    _curSates.State = ROASTER_STATE_STOPPED;
+    _curSates.Stage = STOPPED;
     return true;    
 };
-bool Roaster::isStarted(){
-    return _curSates.State;    
+RoastStage Roaster::Stage(){
+    return _curSates.Stage;    
 };
+
 uint8_t Roaster::getCoffeBeanTemperature(){
     return uint8_t(_thermo_z_cb.readCelsius());
 };
 RoasterStates *Roaster::readStates(){
     uint32_t _curMillis =  millis();
-    if(_curSates.State == ROASTER_STATE_STARTED) {
+    if(_curSates.Stage >= STARTED) {
         _curSates.Time = _curMillis - _timerStart;
         if(_timerStop > 0) 
         {
@@ -69,7 +70,7 @@ RoasterStates *Roaster::readStates(){
 };
 void Roaster::FC(uint8_t DevelopmentTimeRatio){
     uint32_t _curMillis;
-    if(_curSates.State == ROASTER_STATE_STARTED) {
+    if(_curSates.Stage >= STARTED) {
         _curMillis = millis();
         _curSates.FC =  _curMillis - _timerStart;
         _curSates.FCT = getCoffeBeanTemperature();

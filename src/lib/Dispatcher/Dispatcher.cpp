@@ -76,14 +76,12 @@ void Dispatcher::changeForHubStatesRefresh(uint32_t period)
 {
     _statesForHubRefreshPeriod.start(period);
 };
-void Dispatcher::_sendStatesToHub(RoasterStates *curRoasterStates){
+void Dispatcher::_sendStatesToHub(RoasterStates *curRoasterStates)
+{
 
-    // _doc.clear();
-    // _doc[F("type")] = MSG_TYPE_STATES;
-    // _doc[F("json")][F("ms")] = curRoasterStates->Time;
-    // _doc[F("json")][F("bt")] = curRoasterStates->BT;
-
-    // serializeJson(_doc, Serial);
+    Serial.flush();
+    sprintf_P(_buf, PSTR("{\"type\":%u,\"json\":{\"stage\":%u,\"ms\":%u,\"bt\":%u}}"), MSG_Type::STATES, curRoasterStates->Stage, curRoasterStates->Time, curRoasterStates->BT);
+    Serial.println(_buf);
 };
 
 void Dispatcher::_initChart()
@@ -109,7 +107,7 @@ void Dispatcher::startRoast()
 }
 void Dispatcher::stopRoast()
 {
-    if (_roaster.isStarted())
+    if (_roaster.Stage() >= RoastStage::STARTED)
     {
         sprintf_P(_buf, PSTR("page0.b_st.pco2=61277"));
         _nextion.sendCommand(_buf);
@@ -226,7 +224,7 @@ void Dispatcher::refreshStates()
         if (_nextion.currentPage() == 0)
         {
 
-            if (_curRoasterStates->State == ROASTER_STATE_STARTED)
+            if (_curRoasterStates->Stage >= STARTED)
             {
 
                 // Chart-------------------------------------
@@ -317,40 +315,59 @@ void Dispatcher::listEvents()
         String inData = Serial.readStringUntil('\n');
 
         //{"type":32323,"json":{"model":"RHUB","id":"cd881408-179d-23c2-7237-546e394f6e9a","timestatusupdate":1000}}
+        //Serial.println(inData);
 
         if (inData.length() > 0)
         {
             Parser p = Parser(&inData);
-            uint32_t _type = p.getInt("type");
-
-            String _id, _json;
-            uint32_t _refreshPeriod;
-
-            Serial.println(_type);
+            MSG_Type _type = (MSG_Type)p.getInt("type");
             switch (_type)
             {
-                case MSG_TYPE_HI_R:
-                    Serial.println("MSG_TYPE_HI_R");
+            case MSG_Type::HI_R:{
+                // Serial.println("MSG_TYPE_HI_R");
 
-                    _id = p.getString("id");
-                    _refreshPeriod = p.getInt("timestatusupdate");
+                String _id = p.getString("id");
+                uint32_t _refreshPeriod = p.getInt("timestatusupdate");
+                // Serial.println("id: "+_id+" , timestatusupdate: "+_refreshPeriod);
+                Serial.flush();
+                sprintf_P(_buf, PSTR("{\"type\":%u,\"json\":{\"model\":\"%s\",\"id\":\"%s\"}}"), HI_H, "v1", _id.c_str());
+                Serial.println(_buf);
+                changeForHubStatesRefresh(_refreshPeriod);
 
-                    Serial.flush();
-                    sprintf_P(_buf, PSTR("{\"type\":%u,\"json\":{\"model\":\"%s\",\"id\":\"%s\"}}"), MSG_TYPE_HI_H, "v1", _id);
-                    Serial.println(_buf);
-                    changeForHubStatesRefresh(_refreshPeriod);
-
+                break;
+            }
+            case MSG_Type::COMMAND:{
+                
+                RoastCommand _command = (RoastCommand)p.getInt("id");
+                
+                switch (_command)
+                {
+                case RoastCommand::START:
+                    if (_roaster.Stage() == RoastStage::STOPPED)
+                        startRoast();
                     break;
-                case BTN_ST_ON_COMMAND:
-                    Serial.println("BTN_ST_ON_COMMAND");
+                case RoastCommand::STOP:
+                    if (_roaster.Stage() >= RoastStage::STARTED)
+                        stopRoast();
                     break;
-                case BTN_ST_OFF_COMMAND:
-                    Serial.println("BTN_ST_OFF_COMMAND");
+                case RoastCommand::ON_SW:
+                    if (_roaster.Stage() >= RoastStage::STARTED){
+                        stopRoast();
+                        Serial.print("stopRoast");
+                    }
+                    else{
+                        startRoast();
+                        Serial.print("startRoast");
+                    }
                     break;
                 default:
                     break;
+                }
+                break;
             }
-
+            default:
+                break;
+            }
         }
     }
 
@@ -359,30 +376,30 @@ void Dispatcher::listEvents()
     if (_nextion.readInput(9, &input[0]) > 0)
     {
 
-        switch ((int)input[0])
+        switch ((RoastCommand)input[0])
         {
-        case ON_PAGE_COMMAND:
+        case ON_PAGE:
             _onNextionPage(input[1]);
             break;
-        case BTN_ST_ON_COMMAND:
+        case START:
             startRoast();
             break;
-        case BTN_ST_OFF_COMMAND:
+        case STOP:
             stopRoast();
             break;
-        case BTN_FC_ON_COMMAND:
+        case FC_START:
             startFirstCrack();
             break;
-        case BTN_FC_OFF_COMMAND:
+        case FC_END:
             stopFirstCrack();
             break;
-        case RL_COMMAND:
+        case RL:
             changeRoastLevel(input[1]);
             break;
-        case RT_COMMAND:
+        case RT:
             changeRoastTime(input[1]);
             break;
-        case TR_COMMAND:
+        case TR:
             changeDTR(input[1]);
             break;
         default:

@@ -39,10 +39,12 @@ String Parser::getString(String fieldName){
 String Parser::getValue(uint16_t startPos){
     String _res = "", _tmp;
     const String stopChar = "{},\"";
-    for(uint32_t i=startPos; i < (*source).length() - startPos; i++){
+
+    for(uint32_t i=startPos; i < (*source).length(); i++){
         _tmp = (*source).charAt(i);
         if(stopChar.indexOf(_tmp) >=0 )
             break;
+        
         _res += _tmp;    
     }
     return _res;

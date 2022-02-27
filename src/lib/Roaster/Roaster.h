@@ -7,10 +7,22 @@
 #define THERMO_Z_CB_CS 5
 #define THERMO_Z_CB_CLK 6
 
-#define ROASTER_STATE_STARTED 1
-#define ROASTER_STATE_STOPPED 0
-#define ROASTER_STATE_FALSE 255
+// #define ROASTER_STATE_STARTED 1
+// #define ROASTER_STATE_STOPPED 0
+// #define ROASTER_STATE_FALSE 255
 
+enum RoastStage: int8_t
+{
+	ERR       = -1,
+	UNDEF     = -2,
+	STOPPED   = 0,
+	STARTED   = 1,
+	FC        = 20,
+	FCEND     = 21,
+	SC        = 30,
+	SCEND     = 31,
+	ONFINISH  = 50,
+};
 
 struct RoastProfile
 {
@@ -28,7 +40,7 @@ struct RoasterStates
     uint32_t PFC;           //Planned Development Duration time up to First Crack time in Ms
     bool    StopFlag;
     bool    RoRFlag;
-    uint8_t State;
+    RoastStage Stage;
     uint8_t LastRoRBT;
     uint8_t TP;             //TP is the turning point, or the lowest point of the temperature trough and delineates the moment the cold beans hit the roaster.
     uint8_t RoR;            //Delta of curent cofeeBeansTemp & last sec cofee bean temperature. (Rate of rise, or ROR, is linked to bean temperature (or BT; discussed below), and is the rate or speed at which this little green seed is transforming into a darker hew.)
@@ -47,7 +59,7 @@ class Roaster{
         uint8_t getCoffeBeanTemperature();  //Current temperature of coffee bean 0-255
         bool start(RoastProfile profile);
         bool stop();
-        bool isStarted();
+        RoastStage Stage();
         void FC(uint8_t DevelopmentTimeRatio);
         void RL(uint8_t valRL);
         RoasterStates *readStates();
