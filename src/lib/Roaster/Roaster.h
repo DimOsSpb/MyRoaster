@@ -46,6 +46,10 @@ struct RoasterStates
     uint8_t RoR;            //Delta of curent cofeeBeansTemp & last sec cofee bean temperature. (Rate of rise, or ROR, is linked to bean temperature (or BT; discussed below), and is the rate or speed at which this little green seed is transforming into a darker hew.)
     uint32_t FC;            //First crack in Ms from start of roast
     uint8_t FCT;            //First crack temperature
+    uint32_t FCE;            //First crack end in Ms from start of roast
+    uint8_t FCET;            //First crack end temperature
+    uint32_t SC;            //Second crack in Ms from start of roast
+    uint8_t SCT;            //Second crack temperature
     uint8_t BT;             //BT - bean temperature
     uint8_t RL;             //Roast LEVEL
 };
@@ -61,6 +65,9 @@ class Roaster{
         bool stop();
         RoastStage Stage();
         void FC(uint8_t DevelopmentTimeRatio);
+        void FCE();
+        void SC();
+
         void RL(uint8_t valRL);
         RoasterStates *readStates();
     private:
@@ -70,7 +77,7 @@ class Roaster{
         uint32_t _timerRoR;                 //value  millis() for next RoR calculate
         uint32_t _plannedStop;              //planned value Ms from 0 for stop roasting
         uint32_t _plannedFC;                //planned value Ms from 0 for FC 
-        RoasterStates _curSates;
+        RoasterStates _curStates;
         RoastProfile _profile;
         void initRoRTimer();
          

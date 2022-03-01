@@ -78,9 +78,11 @@ void Dispatcher::changeForHubStatesRefresh(uint32_t period)
 };
 void Dispatcher::_sendStatesToHub(RoasterStates *curRoasterStates)
 {
-
+    Serial.println("BT:"+String(curRoasterStates->BT)+",FC:"+ String(curRoasterStates->FC)+",FCT:"+String(curRoasterStates->FCT));
     Serial.flush();
-    sprintf_P(_buf, PSTR("{\"type\":%u,\"json\":{\"stage\":%u,\"ms\":%u,\"bt\":%u}}"), MSG_Type::STATES, curRoasterStates->Stage, curRoasterStates->Time, curRoasterStates->BT);
+    sprintf_P(_buf, PSTR("{\"type\":%u,\"json\":{\"stage\":%u,\"ms\":%lu,\"bt\":%u,\"fc\":%lu,\"fct\":%u,\"fce\":%lu,\"fcet\":%u,\"sc\":%lu,\"sct\":%u}}"),
+            MSG_Type::STATES, curRoasterStates->Stage, curRoasterStates->Time, curRoasterStates->BT, curRoasterStates->FC, curRoasterStates->FCT, curRoasterStates->FCE, curRoasterStates->FCET,
+                                                                                                     curRoasterStates->SC, curRoasterStates->SCT );
     Serial.println(_buf);
 };
 
@@ -109,10 +111,15 @@ void Dispatcher::stopRoast()
 {
     if (_roaster.Stage() >= RoastStage::STARTED)
     {
-        sprintf_P(_buf, PSTR("page0.b_st.pco2=61277"));
-        _nextion.sendCommand(_buf);
-        sprintf_P(_buf, PSTR("page0.b_st.val=0"));
-        _nextion.sendCommand(_buf);
+        Serial.println("2.stopRoast");
+        if (_roaster.Stage() >= RoastStage::ONFINISH)
+        {
+            Serial.println("3.stopRoast");
+            sprintf_P(_buf, PSTR("page0.b_st.pco2=61277"));
+            _nextion.sendCommand(_buf);
+            sprintf_P(_buf, PSTR("page0.b_st.val=0"));
+            _nextion.sendCommand(_buf);
+        }
         _roaster.stop();
     }
 }
@@ -124,15 +131,14 @@ void Dispatcher::startFirstCrack()
 
 void Dispatcher::stopFirstCrack()
 {
+    _roaster.FCE();
 }
 
 void Dispatcher::startSecondCrack()
 {
+    _roaster.SC();
 }
 
-void Dispatcher::stopSecondCrack()
-{
-}
 
 void Dispatcher::changeRoastLevel(uint8_t level, bool _reflect = true)
 {
@@ -315,7 +321,7 @@ void Dispatcher::listEvents()
         String inData = Serial.readStringUntil('\n');
 
         //{"type":32323,"json":{"model":"RHUB","id":"cd881408-179d-23c2-7237-546e394f6e9a","timestatusupdate":1000}}
-        //Serial.println(inData);
+        // Serial.println(inData);
 
         if (inData.length() > 0)
         {
@@ -323,7 +329,8 @@ void Dispatcher::listEvents()
             MSG_Type _type = (MSG_Type)p.getInt("type");
             switch (_type)
             {
-            case MSG_Type::HI_R:{
+            case MSG_Type::HI_R:
+            {
                 // Serial.println("MSG_TYPE_HI_R");
 
                 String _id = p.getString("id");
@@ -336,10 +343,11 @@ void Dispatcher::listEvents()
 
                 break;
             }
-            case MSG_Type::COMMAND:{
-                
+            case MSG_Type::COMMAND:
+            {
+
                 RoastCommand _command = (RoastCommand)p.getInt("id");
-                
+
                 switch (_command)
                 {
                 case RoastCommand::START:
@@ -351,15 +359,41 @@ void Dispatcher::listEvents()
                         stopRoast();
                     break;
                 case RoastCommand::ON_SW:
-                    if (_roaster.Stage() >= RoastStage::STARTED){
+                    if (_roaster.Stage() >= RoastStage::STARTED)
+                    {
+                        Serial.println("1.stopRoast");
                         stopRoast();
-                        Serial.print("stopRoast");
+
                     }
-                    else{
+                    else
+                    {
                         startRoast();
-                        Serial.print("startRoast");
+                        // Serial.println("startRoast");
                     }
                     break;
+                case RoastCommand::FC_START:
+                    //Serial.println("RoastCommand::FC_START");
+                    startFirstCrack();
+                    break;
+                case RoastCommand::FC_END:
+                    stopFirstCrack();
+                    break;
+                case RoastCommand::FC_SW:
+                    if (_roaster.Stage() == RoastStage::STARTED)
+                    {
+                        startFirstCrack();
+                    }
+                    else if(_roaster.Stage() == RoastStage::FC){
+                        stopFirstCrack();
+                    }
+                    break;                
+                case RoastCommand::SC_START:
+                    startSecondCrack();
+                    break;
+                case RoastCommand::SC_SW:
+                    if(_roaster.Stage() == RoastStage::FCEND)
+                        startSecondCrack();
+                    break;                    
                 default:
                     break;
                 }

@@ -2,11 +2,11 @@
 
 Roaster::Roaster(): _thermo_z_cb(THERMO_Z_CB_CLK, THERMO_Z_CB_CS, THERMO_Z_CB_DO){};
 void Roaster::init(){
-    _curSates.Stage = STOPPED;    
+    _curStates.Stage = STOPPED;    
 };
 void Roaster::initRoRTimer(){
     _timerRoR = millis()+_profile.RoRFreq*1000;
-    _curSates.RoRFlag = true;  
+    _curStates.RoRFlag = true;  
 };
 
 bool Roaster::start(RoastProfile profile){
@@ -18,22 +18,28 @@ bool Roaster::start(RoastProfile profile){
     _plannedFC = _plannedStop * 0.01 * (100 - _profile.DTR);    //Duration (0 -> FC) in Ms
 
     //initRoRTimer();
-    _curSates.FC = 0;
-    _curSates.LeftTime = 0;
-    _curSates.StopTime = 0;
-    _curSates.StopFlag = false;
-    _curSates.RoRFlag = false;
-    _curSates.Stage = STARTED;    
+    _curStates.FC = 0;
+    _curStates.LeftTime = 0;
+    _curStates.StopTime = 0;
+    _curStates.StopFlag = false;
+    _curStates.RoRFlag = false;
+    _curStates.Stage = STARTED;    
 
     return true;    
 };
 bool Roaster::stop(){
     //readStates();
-    _curSates.Stage = STOPPED;
+    Serial.println("4.Roaster::stop()");
+    if(_curStates.Stage >= STARTED){
+        if(_curStates.Stage >= ONFINISH)
+            _curStates.Stage = STOPPED;
+        else
+            _curStates.Stage = ONFINISH;
+    }
     return true;    
 };
 RoastStage Roaster::Stage(){
-    return _curSates.Stage;    
+    return _curStates.Stage;    
 };
 
 uint8_t Roaster::getCoffeBeanTemperature(){
@@ -41,46 +47,72 @@ uint8_t Roaster::getCoffeBeanTemperature(){
 };
 RoasterStates *Roaster::readStates(){
     uint32_t _curMillis =  millis();
-    if(_curSates.Stage >= STARTED) {
-        _curSates.Time = _curMillis - _timerStart;
+    if(_curStates.Stage >= STARTED) {
+        _curStates.Time = _curMillis - _timerStart;
         if(_timerStop > 0) 
         {
             if(_curMillis < _timerStop)      
-                _curSates.LeftTime = _timerStop - _curMillis;
+                _curStates.LeftTime = _timerStop - _curMillis;
             else{
                 _timerStop = 0;
-                _curSates.LeftTime = 0;
-                _curSates.StopFlag = true;
+                _curStates.LeftTime = 0;
+                _curStates.StopFlag = true;
             } 
         }   // Stop roast 
     }
-    _curSates.BT = getCoffeBeanTemperature();
+    _curStates.BT = getCoffeBeanTemperature();
     _curMillis =  millis();
     if(_curMillis >= _timerRoR){
-        if(_curSates.LastRoRBT!=0)
-            _curSates.RoR = _curSates.LastRoRBT >= _curSates.BT ? _curSates.LastRoRBT - _curSates.BT :  _curSates.BT - _curSates.LastRoRBT;
-        _curSates.LastRoRBT = _curSates.BT;
+        if(_curStates.LastRoRBT!=0)
+            _curStates.RoR = _curStates.LastRoRBT >= _curStates.BT ? _curStates.LastRoRBT - _curStates.BT :  _curStates.BT - _curStates.LastRoRBT;
+        _curStates.LastRoRBT = _curStates.BT;
         initRoRTimer();
     }
-    _curSates.PDT = _plannedStop;
-    _curSates.PFC = _plannedFC;
+    _curStates.PDT = _plannedStop;
+    _curStates.PFC = _plannedFC;
     
  
-    return &_curSates;
+    return &_curStates;
 };
 void Roaster::FC(uint8_t DevelopmentTimeRatio){
     uint32_t _curMillis;
-    if(_curSates.Stage >= STARTED) {
+    if(_curStates.Stage >= RoastStage::STARTED) {
         _curMillis = millis();
-        _curSates.FC =  _curMillis - _timerStart;
-        _curSates.FCT = getCoffeBeanTemperature();
-        _timerStop = _curMillis + (_curSates.FC / (100-DevelopmentTimeRatio)) * DevelopmentTimeRatio;
-        _curSates.StopTime = _timerStop - _timerStart;
-        _curSates.StopFlag = false;
+        _curStates.FC =  _curMillis - _timerStart;
+        _curStates.FCT = getCoffeBeanTemperature();
 
+        _curStates.FCE = _curStates.FCET = _curStates.SC = _curStates.SCT = 0;
+
+        _timerStop = _curMillis + (_curStates.FC / (100-DevelopmentTimeRatio)) * DevelopmentTimeRatio;
+        _curStates.StopTime = _timerStop - _timerStart;
+        _curStates.StopFlag = false;
+
+        _curStates.Stage = RoastStage::FC;
     }
 };
+void Roaster::FCE(){
+    uint32_t _curMillis;
+    if(_curStates.Stage >= RoastStage::FC) {
+        _curMillis = millis();
+        _curStates.FCE =  _curMillis - _timerStart;
+        _curStates.FCET = getCoffeBeanTemperature();
+
+        _curStates.SC = _curStates.SCT = 0;
+        _curStates.Stage = RoastStage::FCEND;
+    }
+};
+void Roaster::SC(){
+    uint32_t _curMillis;
+    if(_curStates.Stage >= RoastStage::FCEND) {
+        _curMillis = millis();
+        _curStates.SC =  _curMillis - _timerStart;
+        _curStates.SCT = getCoffeBeanTemperature();
+
+        _curStates.Stage = RoastStage::SC;
+    }
+};
+
 void Roaster::RL(uint8_t valRL){
-    _curSates.RL = valRL;
+    _curStates.RL = valRL;
 };
 
