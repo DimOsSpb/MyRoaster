@@ -78,7 +78,7 @@ void Dispatcher::changeForHubStatesRefresh(uint32_t period)
 };
 void Dispatcher::_sendStatesToHub(RoasterStates *curRoasterStates)
 {
-    Serial.println("BT:"+String(curRoasterStates->BT)+",FC:"+ String(curRoasterStates->FC)+",FCT:"+String(curRoasterStates->FCT));
+    //Serial.println("BT:"+String(curRoasterStates->BT)+",FC:"+ String(curRoasterStates->FC)+",FCT:"+String(curRoasterStates->FCT));
     Serial.flush();
     sprintf_P(_buf, PSTR("{\"type\":%u,\"json\":{\"stage\":%u,\"ms\":%lu,\"bt\":%u,\"fc\":%lu,\"fct\":%u,\"fce\":%lu,\"fcet\":%u,\"sc\":%lu,\"sct\":%u}}"),
             MSG_Type::STATES, curRoasterStates->Stage, curRoasterStates->Time, curRoasterStates->BT, curRoasterStates->FC, curRoasterStates->FCT, curRoasterStates->FCE, curRoasterStates->FCET,
